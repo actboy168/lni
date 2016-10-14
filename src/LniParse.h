@@ -326,40 +326,19 @@ namespace lni {
 				if (consume(z, '}')) {
 					return true;
 				}
-				if (consume(z, '[')) {
-					parse_whitespace_and_comments();
-					if (!parse_key(h)) {
-						return false;
-					}
-					parse_whitespace_and_comments();
-					if (!consume(z, ']')) {
-						return error(h, "']' expected near '%c'", *z);
-					}
-					parse_whitespace_and_comments();
-					if (!consume(z, '=')) {
-						return error(h, "'=' expected near '%c'", *z);
-					}
+				if (!parse_value(h)) {
+					return false;
+				}
+				parse_whitespace_and_comments();
+				if (!consume(z, '=')) {
+					h.accept_table_array();
+				}
+				else {
 					parse_whitespace_and_comments();
 					if (!parse_value(h)) {
 						return false;
 					}
 					h.accept_table_hash();
-				}
-				else {
-					if (!parse_value(h)) {
-						return false;
-					}
-					parse_whitespace_and_comments();
-					if (!consume(z, '=')) {
-						h.accept_table_array();
-					}
-					else {
-						parse_whitespace_and_comments();
-						if (!parse_value(h)) {
-							return false;
-						}
-						h.accept_table_hash();
-					}
 				}
 				parse_whitespace_and_comments();
 				if (consume(z, '}')) {
@@ -384,8 +363,57 @@ namespace lni {
 			case '5': case '6': case '7': case '8': case '9': return parse_number(h);
 			case '\0':
 				return error(h, "unexpected symbol near <eof>");
-			default: 
-				return parse_identifier(h);
+			default:  {
+				const char* p = z;
+				for (;;) {
+					switch (*z) {
+					case '=':
+					case ':':
+					case ',':
+					case ']':
+					case '\n':
+					case '\r':
+					case '\t':
+					case '\0':
+					case ' ':
+						parse_identifier(h, p, z - p);
+						return true;
+					default:
+						z++;
+						break;
+					}
+				}
+			}
+			}
+		}
+
+		template <class Handler>
+		bool parse_value_ext(Handler& h)
+		{
+			switch (*z) {
+			case '{':  return parse_table(h);
+			case '[':  return parse_long_string(h);
+			case '"': case '\'': return parse_string(h, *z);
+			case '-':
+			case '0': case '1': case '2': case '3': case '4':
+			case '5': case '6': case '7': case '8': case '9': return parse_number(h);
+			case '\0':
+				return error(h, "unexpected symbol near <eof>");
+			default:  {
+				const char* p = z;
+				for (;;) {
+					switch (*z) {
+					case '\n':
+					case '\r':
+					case '\0':
+						parse_identifier(h, p, z - p);
+						return true;
+					default:
+						z++;
+						break;
+					}
+				}
+			}
 			}
 		}
 
@@ -416,31 +444,13 @@ namespace lni {
 		}
 
 		template <class Handler>
-		bool parse_identifier(Handler& h)
+		void parse_identifier(Handler& h, const char* str, size_t len)
 		{
-			const char* p = z;
-			for (;;) {
-				switch (*z) {
-				case '=':
-				case ':':
-				case ',':
-				case ']':
-				case '\n':
-				case '\r':
-				case '\t':
-				case '\0':
-				case ' ':
-					if (parse_keyword(h, p, z - p))
-						return true;
-					if (h.accept_identifier(p, z - p))
-						return true;		 
-					h.accept_string(p, z - p);
-					return true; 
-				default:
-					z++;
-					break;
-				}
-			}
+			if (parse_keyword(h, str, len))
+				return ;
+			if (h.accept_identifier(str, len))
+				return;
+			h.accept_string(str, len);
 		}
 
 		template <class Handler>
@@ -514,7 +524,7 @@ namespace lni {
 				return error(h, "'=' expected near '%c'", *z);
 			}
 			parse_whitespace_and_comments();
-			if (!parse_value(h)) {
+			if (!parse_value_ext(h)) {
 				return false;
 			}
 			h.accept_keyvalue();
