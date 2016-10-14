@@ -11,17 +11,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="luacore.vcxproj">
-      <Project>{b84f7231-16ce-41d8-8c08-7b523ff4225b}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="..\src\LniParse.cpp" />
     <ClCompile Include="..\src\main.cpp" />
-    <ClCompile Include="..\src\test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\LniParse.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="luacore.vcxproj">
+      <Project>{b84f7231-16ce-41d8-8c08-7b523ff4225b}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{9FD838AC-A5A2-4A24-8166-105BA0D8A973}</ProjectGuid>
@@ -57,11 +56,13 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\build\$(Configuration)\$(ProjectName)\</IntDir>
+    <TargetName>$(ProjectName)-c</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\build\$(Configuration)\$(ProjectName)\</IntDir>
+    <TargetName>$(ProjectName)-c</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
