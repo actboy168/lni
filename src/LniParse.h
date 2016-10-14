@@ -254,8 +254,18 @@ namespace lni {
 					//case 'x':  break;
 					//case 'u':  break;
 					//case 'z':  break;
-					//case '0': case '1': case '2': case '3': case '4':
-					//case '5': case '6': case '7': case '8': case '9': break;
+					case '0': case '1': case '2': case '3': case '4':
+					case '5': case '6': case '7': case '8': case '9': {
+						p--;
+						int r = 0;
+						for (int i = 0; i < 3 && is_digit(*p); ++i, p++) {
+							r = 10 * r + *p - '0';
+						}
+						if (r > 0xFF)
+							return error(h, "decimal escape too large");
+						s.push_back((char)(unsigned char)r);
+						break;
+					}
 					default:
 						return error(h, "invalid escape sequence near '\\%c'", *(p-1));
 					}

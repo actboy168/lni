@@ -2,6 +2,13 @@ package.cpath = package.cpath .. [[;.\..\bin\Debug\?.dll]]
 
 local lni = require 'lni-c'
 
+function LOAD(filename)
+	local f = assert(io.open(filename, 'rb'))
+	local r = lni(f:read 'a')
+	f:close()
+	return r
+end
+
 local function EQUAL(a, b)
 	for k, v in pairs(a) do
 		if type(v) == 'table' then
@@ -68,7 +75,6 @@ b = NO
 }
 )
 
-
 TEST([==[
 [A]  
 a = 1  
@@ -82,5 +88,16 @@ c = 3
   B = { a = 1, b = 2, c = 3 },  
 }  
 )
- 
+
+
+TEST([==[
+[A]  
+a = "\10\0\9" 
+]==]
+,
+{  
+  A = { a = "\10\0\9" }
+}  
+)
+
 print('test ok!')
