@@ -423,6 +423,7 @@ namespace lni {
 				switch (*z) {
 				case '=':
 				case ':':
+				case ',':
 				case ']':
 				case '\n':
 				case '\r':
