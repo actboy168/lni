@@ -446,10 +446,24 @@ namespace lni {
 		template <class Handler>
 		void parse_identifier(Handler& h, const char* str, size_t len)
 		{
-			if (parse_keyword(h, str, len))
-				return ;
-			if (h.accept_identifier(str, len))
-				return;
+			const char* beg = str;
+			const char* end = str + len - 1;
+			for (; beg <= end; ++beg) {
+				if (!equal(beg, " \t")) {
+					break;
+				}
+			}
+			for (; beg <= end; --end) {
+				if (!equal(end, " \t")) {
+					break;
+				}
+			}
+			if (beg < end) {
+				if (parse_keyword(h, beg, end - beg + 1))
+					return;
+				if (h.accept_identifier(beg, end - beg + 1))
+					return;
+			}
 			h.accept_string(str, len);
 		}
 
