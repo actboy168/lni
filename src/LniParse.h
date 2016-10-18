@@ -295,6 +295,10 @@ namespace lni {
 			if (!consume(z, '[')) {
 				return error(h, "invalid long string delimiter near '%s'", std::string(p, z-p).c_str());
 			}
+			if (equal(z, "\n\r"))
+			{
+				incline();
+			}
 			p = z;
 			for (;;)
 			{
