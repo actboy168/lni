@@ -332,8 +332,9 @@ namespace lni {
 		template <class Handler>
 		bool parse_table(Handler& h)
 		{
+			int ary = 0;
 			expect(z, '{');
-			h.accept_table();
+			h.accept_table(ary);
 			for (;;)
 			{
 				parse_whitespace_and_comments();
@@ -345,7 +346,7 @@ namespace lni {
 				}
 				parse_whitespace_and_comments();
 				if (!consume(z, '=')) {
-					h.accept_table_array();
+					h.accept_table_array(ary);
 				}
 				else {
 					parse_whitespace_and_comments();
@@ -627,15 +628,15 @@ namespace lni {
 		void accept_string(const char* str, size_t len) {
 			lua_pushlstring(L, str, len);
 		}
-		void accept_table() {
+		void accept_table(int& ary) {
 			lua_newtable(L);
-			table_array = 1;
+			ary = 1;
 		}
 		void accept_table_hash() {
 			lua_rawset(L, -3);
 		}
-		void accept_table_array() {
-			lua_rawseti(L, -2, table_array++);
+		void accept_table_array(int& ary) {
+			lua_rawseti(L, -2, ary++);
 		}
 		void accept_section(bool inherited) {
 			lua_newtable(L);
