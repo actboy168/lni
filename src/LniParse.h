@@ -607,7 +607,6 @@ namespace lni {
 	struct simple_handler
 	{
 		lua_State* L;
-		size_t table_array = 1;
 
 		simple_handler(lua_State* L)
 			: L(L)
