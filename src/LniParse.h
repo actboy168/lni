@@ -646,10 +646,10 @@ namespace lni {
 			lua_newtable(L);
 		}
 		void accept_keyvalue() {
-			lua_rawset(L, -3);
+			lua_settable(L, -3);
 		}
 		void accept_object() {
-			lua_rawset(L, -3);
+			lua_settable(L, -3);
 		}
 		void accept_root() {
 			lua_newtable(L);
@@ -684,7 +684,7 @@ namespace lni {
 		}
 		void accept_object() {
 			if (normal) {
-				lua_rawset(L, -5);
+				lua_settable(L, -5);
 			}
 		}
 		void accept_section(bool inherited) {
@@ -724,7 +724,7 @@ namespace lni {
 			}
 		}
 		void accept_keyvalue() {
-			lua_rawset(L, object);
+			lua_settable(L, object);
 		}
 		bool accept_identifier(const char* str, size_t len) {
 			lua_pushlstring(L, str, len);
