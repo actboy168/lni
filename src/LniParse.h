@@ -97,7 +97,7 @@ namespace lni {
 			}
 		}
 
-		void incline() 
+		void incline()
 		{
 			char old = *z;
 			assert(equal(z, "\n\r"));
@@ -188,7 +188,7 @@ namespace lni {
 			else
 			{
 				if (!is_digit(*p))
-					return error(h, "invalid number near '%s'", std::string(z, p-z+1).c_str());
+					return error(h, "invalid number near '%s'", std::string(z, p - z + 1).c_str());
 				i64 *= 10;
 				i64 += *p - '0';
 				for (p++; is_digit(*p); p++)
@@ -251,9 +251,9 @@ namespace lni {
 					case 'r':  s.push_back('\r'); break;
 					case 't':  s.push_back('\t'); break;
 					case 'v':  s.push_back('\v'); break;
-					//case 'x':  break;
-					//case 'u':  break;
-					//case 'z':  break;
+						//case 'x':  break;
+						//case 'u':  break;
+						//case 'z':  break;
 					case '0': case '1': case '2': case '3': case '4':
 					case '5': case '6': case '7': case '8': case '9': {
 						p--;
@@ -267,7 +267,7 @@ namespace lni {
 						break;
 					}
 					default:
-						return error(h, "invalid escape sequence near '\\%c'", *(p-1));
+						return error(h, "invalid escape sequence near '\\%c'", *(p - 1));
 					}
 					break;
 				case '\0':
@@ -293,7 +293,7 @@ namespace lni {
 				sep++;
 			}
 			if (!consume(z, '[')) {
-				return error(h, "invalid long string delimiter near '%s'", std::string(p, z-p).c_str());
+				return error(h, "invalid long string delimiter near '%s'", std::string(p, z - p).c_str());
 			}
 			if (equal(z, "\n\r"))
 			{
@@ -317,7 +317,7 @@ namespace lni {
 						return true;
 					}
 				}
-					break;
+						  break;
 				case '\n':
 				case '\r':
 					incline();
@@ -359,7 +359,7 @@ namespace lni {
 				if (consume(z, '}')) {
 					return true;
 				}
-				if (!consume(z, ',')) { 
+				if (!consume(z, ',')) {
 					return error(h, "',' expected near '%c'", *z);
 				}
 			}
@@ -596,7 +596,7 @@ namespace lni {
 			return true;
 		}
 	};
-	
+
 	inline void lua_copytable(lua_State* L, int src, int dst)
 	{
 		src = lua_absindex(L, src);
@@ -678,9 +678,9 @@ namespace lni {
 		void accept_root() {
 			// main
 			// default
-			// enum		   
+			// enum
 			t_enum = lua_gettop(L);
-			t_default = t_enum-1;
+			t_default = t_enum - 1;
 		}
 		void accept_object() {
 			if (normal) {
@@ -688,7 +688,7 @@ namespace lni {
 			}
 		}
 		void accept_section(bool inherited) {
-			const char* name = luaL_checkstring(L, inherited? -2: -1);
+			const char* name = luaL_checkstring(L, inherited ? -2 : -1);
 			if (0 == strcmp(name, "default")) {
 				if (inherited) lua_pop(L, 1);
 				lua_pop(L, 1);
