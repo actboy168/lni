@@ -423,6 +423,11 @@ namespace lni {
 					case '\0':
 						parse_identifier(h, p, z - p);
 						return true;
+					case '-':
+						if (z[1] == '-') {
+							parse_identifier(h, p, z - p);
+							return true;
+						}
 					default:
 						z++;
 						break;

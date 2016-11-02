@@ -124,4 +124,13 @@ TEST([==[
 }
 )
 
+TEST([==[
+[A] a = false -- test
+]==]
+,
+{  
+  A = { a = false }
+}
+)
+
 print('test ok!')
