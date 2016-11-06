@@ -523,8 +523,9 @@ namespace lni {
 		}
 
 		template <class Handler>
-		bool parse_section(Handler& h, int& mode)
+		bool parse_section(Handler& h)
 		{
+			int mode = 0;
 			expect(z, '[');
 			if (consume(z, '[')) {
 				mode = 1;
@@ -546,7 +547,7 @@ namespace lni {
 			if (!consume(z, ']') || ((mode == 1) && !consume(z, ']'))) {
 				return error(h, "']' expected near '%c'", *z);
 			}
-			h.accept_section(inherited);
+			h.accept_section(mode, inherited);
 			return true;
 		}
 
@@ -571,8 +572,7 @@ namespace lni {
 		template <class Handler>
 		bool parse_object(Handler& h)
 		{
-			int mode = 0;
-			if (!parse_section(h, mode)) {
+			if (!parse_section(h)) {
 				return false;
 			}
 			parse_whitespace_and_comments();
@@ -582,7 +582,7 @@ namespace lni {
 				}
 				parse_whitespace_and_comments();
 			}
-			h.accept_object(mode);
+			h.accept_object();
 			return true;
 		}
 
@@ -646,30 +646,46 @@ namespace lni {
 		void accept_table_array(int& ary) {
 			lua_rawseti(L, -2, ary++);
 		}
-		void accept_section(bool inherited) {
-			lua_newtable(L);
-		}
-		void accept_set() {
-			lua_settable(L, -3);
-		}
-		void accept_object(int mode) {
+		void accept_section(int mode, bool inherited) {
+			if (inherited) {
+				if (LUA_TTABLE != lua_rawget(L, -3)) {
+					lua_pop(L, 1);
+					lua_newtable(L);
+				}
+				else {
+					lua_newtable(L);
+					lua_copytable(L, -2, -1);
+					lua_remove(L, -2);
+				}
+			}
+			else {
+				lua_newtable(L);
+			}
 			if (mode == 0) {
-				lua_settable(L, -3);
+				lua_pushvalue(L, -1);
+				lua_insert(L, -3);
+				lua_settable(L, -4);
 			}
 			else {
 				lua_pushvalue(L, -2);
 				if (lua_gettable(L, -4) != LUA_TTABLE) {
 					lua_pop(L, 1);
 					lua_newtable(L);
-					lua_pushvalue(L, -1);
 					lua_pushvalue(L, -3);
 					lua_pushvalue(L, -2);
 					lua_settable(L, -6);
 				}
-				lua_insert(L, -2);
+				lua_pushvalue(L, -2);
 				lua_seti(L, -2, luaL_len(L, -2) + 1);
-				lua_pop(L, 2);
+				lua_pop(L, 1);
+				lua_remove(L, -2);
 			}
+		}
+		void accept_set() {
+			lua_settable(L, -3);
+		}
+		void accept_object() {
+			lua_pop(L, 1);
 		}
 		void accept_root() {
 			lua_newtable(L);
@@ -702,27 +718,12 @@ namespace lni {
 			t_enum = lua_gettop(L);
 			t_default = t_enum - 1;
 		}
-		void accept_object(int mode) {
+		void accept_object() {
 			if (normal) {
-				if (mode == 0) {
-					lua_settable(L, -5);
-				}
-				else {
-					lua_pushvalue(L, -2);
-					if (lua_gettable(L, -6) != LUA_TTABLE) {
-						lua_pop(L, 1);
-						lua_newtable(L);
-						lua_pushvalue(L, -3);
-						lua_pushvalue(L, -2);
-						lua_settable(L, -8);
-					}
-					lua_insert(L, -2);
-					lua_seti(L, -2, luaL_len(L, -2) + 1);
-					lua_pop(L, 2);
-				}
+				lua_pop(L, 1);
 			}
 		}
-		void accept_section(bool inherited) {
+		void accept_section(int mode, bool inherited) {
 			const char* name = luaL_checkstring(L, inherited ? -2 : -1);
 			if (0 == strcmp(name, "default")) {
 				if (inherited) lua_pop(L, 1);
@@ -756,6 +757,25 @@ namespace lni {
 			else {
 				lua_newtable(L);
 				lua_copytable(L, t_default, -1);
+			}
+			if (mode == 0) {
+				lua_pushvalue(L, -1);
+				lua_insert(L, -3);
+				lua_settable(L, -6);
+			}
+			else {
+				lua_pushvalue(L, -2);
+				if (lua_gettable(L, -6) != LUA_TTABLE) {
+					lua_pop(L, 1);
+					lua_newtable(L);
+					lua_pushvalue(L, -3);
+					lua_pushvalue(L, -2);
+					lua_settable(L, -8);
+				}
+				lua_pushvalue(L, -2);
+				lua_seti(L, -2, luaL_len(L, -2) + 1);
+				lua_pop(L, 1);
+				lua_remove(L, -2);
 			}
 		}
 		void accept_set() {
