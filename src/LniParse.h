@@ -734,7 +734,7 @@ namespace lni {
 			}
 
 			if (inherited) {
-				if (LUA_TTABLE != lua_rawget(L, -5)) {
+				if (LUA_TTABLE != lua_rawget(L, t_main)) {
 					lua_pop(L, 1);
 					lua_newtable(L);
 					lua_copytable(L, t_default, -1);
