@@ -534,20 +534,20 @@ namespace lni {
 			if (!parse_key(h)) {
 				return false;
 			}
-			bool inherited = false;
-			parse_whitespace();
-			if (consume(z, ':')) {
-				inherited = true;
+			if (h.accept_section(mode)) {
 				parse_whitespace();
-				if (!parse_key(h)) {
-					return false;
+				if (consume(z, ':')) {
+					parse_whitespace();
+					if (!parse_key(h)) {
+						return false;
+					}
+					h.accept_section_inherited();
 				}
-				parse_whitespace();
 			}
+			parse_whitespace();
 			if (!consume(z, ']') || ((mode == 1) && !consume(z, ']'))) {
 				return error(h, "']' expected near '%c'", *z);
 			}
-			h.accept_section(mode, inherited);
 			return true;
 		}
 
@@ -718,55 +718,45 @@ namespace lni {
 			t_default = t_enum - 1;
 			t_main = t_default - 1;
 		}
-		void accept_section(int mode, bool inherited) {
-			const char* name = luaL_checkstring(L, inherited ? -2 : -1);
+		bool accept_section(int mode) {
+			const char* name = luaL_checkstring(L, -1);
 			if (0 == strcmp(name, "default")) {
-				if (inherited) lua_pop(L, 1);
 				lua_pop(L, 1);
 				lua_pushvalue(L, t_default);
-				return;
+				return false;
 			}
 			if (0 == strcmp(name, "enum")) {
-				if (inherited) lua_pop(L, 1);
 				lua_pop(L, 1);
 				lua_pushvalue(L, t_enum);
-				return;
+				return false;
 			}
-
-			if (inherited) {
-				if (LUA_TTABLE != lua_rawget(L, t_main)) {
-					lua_pop(L, 1);
-					lua_newtable(L);
-					lua_copytable(L, t_default, -1);
-				}
-				else {
-					lua_newtable(L);
-					lua_copytable(L, -2, -1);
-					lua_remove(L, -2);
-				}
-			}
-			else {
+			lua_pushvalue(L, -1);
+			if (lua_gettable(L, t_main) != LUA_TTABLE) {
+				lua_pop(L, 1);
 				lua_newtable(L);
-				lua_copytable(L, t_default, -1);
-			}
-			if (mode == 0) {
 				lua_pushvalue(L, -1);
 				lua_insert(L, -3);
 				lua_settable(L, t_main);
 			}
 			else {
-				lua_pushvalue(L, -2);
-				if (lua_gettable(L, t_main) != LUA_TTABLE) {
-					lua_pop(L, 1);
-					lua_newtable(L);
-					lua_pushvalue(L, -3);
-					lua_pushvalue(L, -2);
-					lua_settable(L, t_main);
-				}
-				lua_pushvalue(L, -2);
-				lua_seti(L, -2, luaL_len(L, -2) + 1);
-				lua_pop(L, 1);
 				lua_remove(L, -2);
+			}
+			if (mode != 0) {
+				lua_newtable(L);
+				lua_pushvalue(L, -1);
+				lua_seti(L, -3, luaL_len(L, -3) + 1);
+				lua_remove(L, -2);
+			}
+			return true;
+		}
+		void accept_section_inherited() {
+			if (LUA_TTABLE != lua_rawget(L, t_main)) {
+				lua_pop(L, 1);
+				lua_copytable(L, t_default, -1);
+			}
+			else {
+				lua_copytable(L, -1, -2);
+				lua_pop(L, 1);
 			}
 		}
 		bool accept_identifier(const char* str, size_t len) {
