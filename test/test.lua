@@ -84,6 +84,16 @@ TEST([==[
 )
 
 TEST([==[
+[default] a = 1 
+[[A]] b = 0  
+]==]
+,
+{
+ A = {{ b = 0 }}  
+}
+)
+
+TEST([==[
 [enum]  
 YES = 1  
 NO = 0  
