@@ -703,10 +703,9 @@ namespace lni {
 	struct handler
 		: public simple_handler
 	{
-		int object = 0;
+		int t_main = 0;
 		int t_default = 0;
 		int t_enum = 0;
-		bool normal = true;
 
 		handler(lua_State* L)
 			: simple_handler(L)
@@ -717,31 +716,23 @@ namespace lni {
 			// enum
 			t_enum = lua_gettop(L);
 			t_default = t_enum - 1;
-		}
-		void accept_object() {
-			if (normal) {
-				lua_pop(L, 1);
-			}
+			t_main = t_default - 1;
 		}
 		void accept_section(int mode, bool inherited) {
 			const char* name = luaL_checkstring(L, inherited ? -2 : -1);
 			if (0 == strcmp(name, "default")) {
 				if (inherited) lua_pop(L, 1);
 				lua_pop(L, 1);
-				normal = false;
-				object = t_default;
+				lua_pushvalue(L, t_default);
 				return;
 			}
 			if (0 == strcmp(name, "enum")) {
 				if (inherited) lua_pop(L, 1);
 				lua_pop(L, 1);
-				normal = false;
-				object = t_enum;
+				lua_pushvalue(L, t_enum);
 				return;
 			}
 
-			normal = true;
-			object = -3;
 			if (inherited) {
 				if (LUA_TTABLE != lua_rawget(L, -5)) {
 					lua_pop(L, 1);
@@ -761,25 +752,22 @@ namespace lni {
 			if (mode == 0) {
 				lua_pushvalue(L, -1);
 				lua_insert(L, -3);
-				lua_settable(L, -6);
+				lua_settable(L, t_main);
 			}
 			else {
 				lua_pushvalue(L, -2);
-				if (lua_gettable(L, -6) != LUA_TTABLE) {
+				if (lua_gettable(L, t_main) != LUA_TTABLE) {
 					lua_pop(L, 1);
 					lua_newtable(L);
 					lua_pushvalue(L, -3);
 					lua_pushvalue(L, -2);
-					lua_settable(L, -8);
+					lua_settable(L, t_main);
 				}
 				lua_pushvalue(L, -2);
 				lua_seti(L, -2, luaL_len(L, -2) + 1);
 				lua_pop(L, 1);
 				lua_remove(L, -2);
 			}
-		}
-		void accept_set() {
-			lua_settable(L, object);
 		}
 		bool accept_identifier(const char* str, size_t len) {
 			lua_pushlstring(L, str, len);
