@@ -507,6 +507,7 @@ namespace lni {
 				switch (*z)	 {
 				case '=':
 				case ':':
+				case '.':
 				case ']':
 				case '\n':
 				case '\r':
@@ -533,18 +534,27 @@ namespace lni {
 			parse_whitespace();
 			if (!parse_key(h)) {
 				return false;
+			}	
+			bool normal = h.accept_section(mode);
+			bool top = true;
+			while (consume(z, '.')) {
+				if (!parse_key(h)) {
+					return false;
+				} 
+				h.accept_section_child();
+				top = false;
 			}
-			if (h.accept_section(mode)) {
+			if (normal) {
 				parse_whitespace();
 				if (consume(z, ':')) {
 					parse_whitespace();
 					if (!parse_key(h)) {
 						return false;
 					}
-					h.accept_section_inherited(mode);
+					h.accept_section_inherited(top && mode == 0);
 				}
 				else {
-					h.accept_section_end(mode);
+					h.accept_section_end(top && mode == 0);
 				}
 			}
 			parse_whitespace();
@@ -751,11 +761,26 @@ namespace lni {
 				lua_remove(L, -2);
 			}
 			return true;
+		}	  
+		void accept_section_child()
+		{
+			lua_pushvalue(L, -1);
+			if (lua_gettable(L, -3) != LUA_TTABLE) {
+				lua_pop(L, 1);
+				lua_newtable(L);
+				lua_pushvalue(L, -1);
+				lua_insert(L, -3);
+				lua_settable(L, -4);
+			}
+			else {
+				lua_remove(L, -2);
+			}
+			lua_remove(L, -2);
 		}
-		void accept_section_inherited(int mode) {
+		void accept_section_inherited(bool top) {
 			if (LUA_TTABLE != lua_rawget(L, t_main)) {
 				lua_pop(L, 1);
-				if (mode == 0) {
+				if (top) {
 					lua_copytable(L, t_default, -1);
 				}
 			}
@@ -764,8 +789,8 @@ namespace lni {
 				lua_pop(L, 1);
 			}
 		}
-		void accept_section_end(int mode) {
-			if (mode == 0) {
+		void accept_section_end(bool top) {
+			if (top) {
 				lua_copytable(L, t_default, -1);
 			}
 		}
