@@ -546,16 +546,22 @@ namespace lni {
 			}
 			if (normal) {
 				parse_whitespace();
+				bool inherited = false;
 				if (consume(z, ':')) {
 					parse_whitespace();
 					if (!parse_key(h)) {
 						return false;
 					}
-					h.accept_section_inherited(top && mode == 0);
+					h.accept_section_inherited();
+					while (consume(z, '.')) {
+						if (!parse_key(h)) {
+							return false;
+						}
+						h.accept_section_child();
+					}
+					inherited = true;
 				}
-				else {
-					h.accept_section_end(top && mode == 0);
-				}
+				h.accept_section_end(inherited, top && mode == 0);
 			}
 			parse_whitespace();
 			if (!consume(z, ']') || ((mode == 1) && !consume(z, ']'))) {
@@ -777,19 +783,23 @@ namespace lni {
 			}
 			lua_remove(L, -2);
 		}
-		void accept_section_inherited(bool top) {
+		void accept_section_inherited() {
+			lua_pushvalue(L, -1);
 			if (LUA_TTABLE != lua_rawget(L, t_main)) {
 				lua_pop(L, 1);
-				if (top) {
-					lua_copytable(L, t_default, -1);
-				}
+				lua_newtable(L);
+				lua_pushvalue(L, -1);
+				lua_insert(L, -3);
+				lua_settable(L, -4);
 			}
-			else {
+			lua_remove(L, -2);
+		}
+		void accept_section_end(bool inherited, bool top) {
+			if (inherited) {
 				lua_copytable(L, -1, -2);
 				lua_pop(L, 1);
+				return;
 			}
-		}
-		void accept_section_end(bool top) {
 			if (top) {
 				lua_copytable(L, t_default, -1);
 			}
