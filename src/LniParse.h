@@ -543,6 +543,9 @@ namespace lni {
 					}
 					h.accept_section_inherited();
 				}
+				else {
+					h.accept_section_end();
+				}
 			}
 			parse_whitespace();
 			if (!consume(z, ']') || ((mode == 1) && !consume(z, ']'))) {
@@ -758,6 +761,9 @@ namespace lni {
 				lua_copytable(L, -1, -2);
 				lua_pop(L, 1);
 			}
+		}
+		void accept_section_end() {
+			lua_copytable(L, t_default, -1);
 		}
 		bool accept_identifier(const char* str, size_t len) {
 			lua_pushlstring(L, str, len);
