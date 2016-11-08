@@ -529,27 +529,38 @@ namespace lni {
 		{
 			int mode = 0;
 			expect(z, '[');
+			if (consume(z, '[')) {
+				mode = 1;
+			}
 			parse_whitespace();
 			if (!parse_key(h)) {
 				return false;
 			}
 			bool normal = h.accept_section();
-			if (consume(z, '[')) {
-				if (!consume(z, ']')) {
-					return error(h, "']' expected near '%c'", *z);
-				}
-				h.accept_section_array();
-				mode = 1;
-			}
 			bool top = true;
-			while (consume(z, '.')) {
-				if (!parse_key(h)) {
-					return false;
-				} 
-				h.accept_section_child();
-				top = false;
+			for (;;) {
+				if (consume(z, '.')) {
+					if (!parse_key(h)) {
+						return false;
+					}
+					h.accept_section_child();
+					top = false;
+					continue;
+				}
+				if (consume(z, '[')) {
+					if (!consume(z, ']')) {
+						return error(h, "']' expected near '%c'", *z);
+					}
+					h.accept_section_array();
+					top = false;
+					continue;
+				}
+				break;
 			}
 			if (normal) {
+				if (mode == 1) {
+					h.accept_section_newarray();
+				}
 				parse_whitespace();
 				bool inherited = false;
 				if (consume(z, ':')) {
@@ -569,7 +580,7 @@ namespace lni {
 				h.accept_section_end(inherited, top && mode == 0);
 			}
 			parse_whitespace();
-			if (!consume(z, ']')) {
+			if (!consume(z, ']') || ((mode == 1) && (!consume(z, ']')))) {
 				return error(h, "']' expected near '%c'", *z);
 			}
 			return true;
@@ -773,6 +784,17 @@ namespace lni {
 			return true;
 		}
 		void accept_section_array() {
+			lua_Integer n = luaL_len(L, -3);
+			if (n == 0) n = 1;
+			if (LUA_TTABLE != lua_geti(L, -1, n)) {
+				lua_pop(L, 1);
+				lua_newtable(L);
+				lua_pushvalue(L, -1);
+				lua_seti(L, -3, n);
+			}
+			lua_remove(L, -2);
+		}
+		void accept_section_newarray() {
 			lua_newtable(L);
 			lua_pushvalue(L, -1);
 			lua_seti(L, -3, luaL_len(L, -3) + 1);
