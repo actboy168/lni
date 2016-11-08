@@ -508,6 +508,7 @@ namespace lni {
 				case '=':
 				case ':':
 				case '.':
+				case '[':
 				case ']':
 				case '\n':
 				case '\r':
@@ -528,13 +529,16 @@ namespace lni {
 		{
 			int mode = 0;
 			expect(z, '[');
-			if (consume(z, '[')) {
-				mode = 1;
-			}
 			parse_whitespace();
 			if (!parse_key(h)) {
 				return false;
-			}	
+			}
+			if (consume(z, '[')) {
+				if (!consume(z, ']')) {
+					return error(h, "']' expected near '%c'", *z);
+				}
+				mode = 1;
+			}
 			bool normal = h.accept_section(mode);
 			bool top = true;
 			while (consume(z, '.')) {
@@ -564,7 +568,7 @@ namespace lni {
 				h.accept_section_end(inherited, top && mode == 0);
 			}
 			parse_whitespace();
-			if (!consume(z, ']') || ((mode == 1) && !consume(z, ']'))) {
+			if (!consume(z, ']')) {
 				return error(h, "']' expected near '%c'", *z);
 			}
 			return true;
