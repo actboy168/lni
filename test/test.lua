@@ -19,8 +19,10 @@ local function EQUAL(a, b)
 	end
 end
 
+local n = 0
 local function TEST(script, t)
-	local r = lni(script)
+	n = n + 1
+	local r = lni(script, 'TEST-' .. n)
 	EQUAL(r, t)
 	EQUAL(t, r)
 end
