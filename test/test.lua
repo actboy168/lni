@@ -1,6 +1,7 @@
 package.cpath = package.cpath .. [[;.\..\bin\Debug\?.dll]]
 
 local lni = require 'lni-c'
+local print_r = require 'print_r'
 
 function LOAD(filename)
 	local f = assert(io.open(filename, 'rb'))
@@ -14,7 +15,7 @@ local function EQUAL(a, b)
 		if type(v) == 'table' then
 			EQUAL(v, b[k])
 		else
-			assert(v == b[k], v)
+			assert(v == b[k])
 		end
 	end
 end
@@ -22,9 +23,28 @@ end
 local n = 0
 local function TEST(script, t)
 	n = n + 1
-	local r = lni(script, 'TEST-' .. n)
-	EQUAL(r, t)
-	EQUAL(t, r)
+	local name = 'TEST-' .. n
+	local r = lni(script, name)
+	local ok, e = pcall(EQUAL, r, t)
+	if not ok then
+		print(script)
+		print('--------------------------')
+		print_r(r)
+		print('--------------------------')
+		print_r(t)
+		print('--------------------------')
+		error(name)
+	end
+	local ok, e = pcall(EQUAL, t, r)
+	if not ok then
+		print(script)
+		print('--------------------------')
+		print_r(r)
+		print('--------------------------')
+		print_r(t)
+		print('--------------------------')
+		error(name)
+	end
 end
 
 TEST(
