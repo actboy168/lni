@@ -754,6 +754,11 @@ namespace lni {
 				lua_pushvalue(L, t_enum);
 				return false;
 			}
+			if (0 == strcmp(name, "root")) {
+				lua_pop(L, 1);
+				lua_pushvalue(L, t_main);
+				return false;
+			}
 			lua_pushvalue(L, -1);
 			if (lua_gettable(L, t_main) != LUA_TTABLE) {
 				lua_pop(L, 1);
