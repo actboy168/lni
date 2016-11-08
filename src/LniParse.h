@@ -533,13 +533,14 @@ namespace lni {
 			if (!parse_key(h)) {
 				return false;
 			}
+			bool normal = h.accept_section();
 			if (consume(z, '[')) {
 				if (!consume(z, ']')) {
 					return error(h, "']' expected near '%c'", *z);
 				}
+				h.accept_section_array();
 				mode = 1;
 			}
-			bool normal = h.accept_section(mode);
 			bool top = true;
 			while (consume(z, '.')) {
 				if (!parse_key(h)) {
@@ -741,7 +742,7 @@ namespace lni {
 			t_default = t_enum - 1;
 			t_main = t_default - 1;
 		}
-		bool accept_section(int mode) {
+		bool accept_section() {
 			const char* name = luaL_checkstring(L, -1);
 			if (0 == strcmp(name, "default")) {
 				lua_pop(L, 1);
@@ -764,14 +765,14 @@ namespace lni {
 			else {
 				lua_remove(L, -2);
 			}
-			if (mode != 0) {
-				lua_newtable(L);
-				lua_pushvalue(L, -1);
-				lua_seti(L, -3, luaL_len(L, -3) + 1);
-				lua_remove(L, -2);
-			}
 			return true;
-		}	  
+		}
+		void accept_section_array() {
+			lua_newtable(L);
+			lua_pushvalue(L, -1);
+			lua_seti(L, -3, luaL_len(L, -3) + 1);
+			lua_remove(L, -2);
+		}
 		void accept_section_child()
 		{
 			lua_pushvalue(L, -1);
