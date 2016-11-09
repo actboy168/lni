@@ -686,6 +686,18 @@ namespace lni {
 		}
 	}
 
+	inline void lua_cleartable(lua_State* L, int t)
+	{
+		t = lua_absindex(L, t);
+		lua_pushnil(L);
+		while (lua_next(L, t)) {
+			lua_pop(L, 1);
+			lua_pushvalue(L, -1);
+			lua_pushnil(L);
+			lua_rawset(L, t);
+		}
+	}
+
 	struct simple_handler
 	{
 		lua_State* L;
@@ -831,12 +843,16 @@ namespace lni {
 		}
 		void accept_section_end(bool inherited, bool top) {
 			if (inherited) {
+				lua_cleartable(L, -2);
 				lua_copytable(L, -1, -2);
 				lua_pop(L, 1);
 				return;
 			}
-			if (top) {
-				lua_copytable(L, t_default, -1);
+			else {
+				lua_cleartable(L, -1);
+				if (top) {
+					lua_copytable(L, t_default, -1);
+				}
 			}
 		}
 		bool accept_identifier(const char* str, size_t len) {
