@@ -596,11 +596,22 @@ namespace lni {
 						return false;
 					}
 					h.accept_section_inherited();
-					while (consume(z, '.')) {
-						if (!parse_section_key(h)) {
-							return false;
+					for (;;) {
+						if (consume(z, '.')) {
+							if (!parse_section_key(h)) {
+								return false;
+							}
+							h.accept_section_child();
+							continue;
 						}
-						h.accept_section_child();
+						if (consume(z, '[')) {
+							if (!consume(z, ']')) {
+								return error(h, "']' expected near '%c'", *z);
+							}
+							h.accept_section_array();
+							continue;
+						}
+						break;
 					}
 					inherited = true;
 				}
