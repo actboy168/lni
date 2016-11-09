@@ -506,6 +506,34 @@ namespace lni {
 			for (;;) {
 				switch (*z)	 {
 				case '=':
+				case '.':
+				case '\n':
+				case '\r':
+				case '\t':
+				case '\0':
+				case ' ':
+					h.accept_string(p, z - p);
+					return true;
+				default:
+					z++;
+					break;
+				}
+			}
+		}
+
+		template <class Handler>
+		bool parse_section_key(Handler& h)
+		{
+			switch (*z) {
+			case '"': case '\'': return parse_string(h, *z);
+			case '\0':
+				return error(h, "unexpected symbol near <eof>");
+			default:
+				break;
+			}
+			const char* p = z;
+			for (;;) {
+				switch (*z)	 {
 				case ':':
 				case '.':
 				case '[':
@@ -533,14 +561,14 @@ namespace lni {
 				mode = 1;
 			}
 			parse_whitespace();
-			if (!parse_key(h)) {
+			if (!parse_section_key(h)) {
 				return false;
 			}
 			if (h.accept_section()) {
 				bool top = true;
 				for (;;) {
 					if (consume(z, '.')) {
-						if (!parse_key(h)) {
+						if (!parse_section_key(h)) {
 							return false;
 						}
 						h.accept_section_child();
@@ -564,12 +592,12 @@ namespace lni {
 				bool inherited = false;
 				if (consume(z, ':')) {
 					parse_whitespace();
-					if (!parse_key(h)) {
+					if (!parse_section_key(h)) {
 						return false;
 					}
 					h.accept_section_inherited();
 					while (consume(z, '.')) {
-						if (!parse_key(h)) {
+						if (!parse_section_key(h)) {
 							return false;
 						}
 						h.accept_section_child();
