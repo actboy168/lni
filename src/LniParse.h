@@ -561,10 +561,14 @@ namespace lni {
 				mode = 1;
 			}
 			parse_whitespace();
-			if (!parse_section_key(h)) {
-				return false;
+			bool has_key = false;
+			if (!equal(z, '.')) {
+				if (!parse_section_key(h)) {
+					return false;
+				}
+				has_key = true;
 			}
-			if (h.accept_section()) {
+			if (!has_key || h.accept_section()) {
 				bool top = true;
 				for (;;) {
 					if (consume(z, '.')) {
