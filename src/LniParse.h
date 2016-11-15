@@ -655,7 +655,6 @@ namespace lni {
 				}
 				parse_whitespace_and_comments();
 			}
-			h.accept_object();
 			return true;
 		}
 
@@ -670,6 +669,7 @@ namespace lni {
 				}
 				parse_whitespace_and_comments();
 			}
+			h.accept_root_end();
 			return true;
 		}
 	};
@@ -734,11 +734,12 @@ namespace lni {
 		void accept_set() {
 			lua_settable(L, -3);
 		}
-		void accept_object() {
-			lua_pop(L, 1);
-		}
 		void accept_root() {
 			lua_newtable(L);
+			lua_pushvalue(L, -1);
+		}
+		void accept_root_end() {
+			lua_pop(L, 1);
 		}
 		bool accept_identifier(const char* str, size_t len) {
 			return false;
@@ -767,8 +768,10 @@ namespace lni {
 			t_enum = lua_gettop(L);
 			t_default = t_enum - 1;
 			t_main = t_default - 1;
+			lua_pushvalue(L, t_main);
 		}
 		bool accept_section() {
+			lua_remove(L, -2);
 			const char* name = luaL_checkstring(L, -1);
 			if (0 == strcmp(name, "default")) {
 				lua_pop(L, 1);
