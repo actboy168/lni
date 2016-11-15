@@ -561,14 +561,14 @@ namespace lni {
 				mode = 1;
 			}
 			parse_whitespace();
-			bool has_key = false;
+			bool has_root = false;
 			if (!equal(z, '.')) {
 				if (!parse_section_key(h)) {
 					return false;
 				}
-				has_key = true;
+				has_root = true;
 			}
-			if (!has_key || h.accept_section()) {
+			if (h.accept_section(has_root)) {
 				bool top = true;
 				for (;;) {
 					if (consume(z, '.')) {
@@ -659,6 +659,7 @@ namespace lni {
 				}
 				parse_whitespace_and_comments();
 			}
+			h.accept_object();
 			return true;
 		}
 
@@ -738,6 +739,9 @@ namespace lni {
 		void accept_set() {
 			lua_settable(L, -3);
 		}
+		void accept_object() {
+			lua_pop(L, 1);
+		}
 		void accept_root() {
 			lua_newtable(L);
 			lua_pushvalue(L, -1);
@@ -774,22 +778,29 @@ namespace lni {
 			t_main = t_default - 1;
 			lua_pushvalue(L, t_main);
 		}
-		bool accept_section() {
+		bool accept_section(bool has_root) {
+			if (!has_root) {
+				lua_pushvalue(L, -1);
+				return true;
+			}
 			lua_remove(L, -2);
 			const char* name = luaL_checkstring(L, -1);
 			if (0 == strcmp(name, "default")) {
 				lua_pop(L, 1);
 				lua_pushvalue(L, t_default);
+				lua_pushvalue(L, -1);
 				return false;
 			}
 			if (0 == strcmp(name, "enum")) {
 				lua_pop(L, 1);
 				lua_pushvalue(L, t_enum);
+				lua_pushvalue(L, -1);
 				return false;
 			}
 			if (0 == strcmp(name, "root")) {
 				lua_pop(L, 1);
 				lua_pushvalue(L, t_main);
+				lua_pushvalue(L, -1);
 				return false;
 			}
 			lua_pushvalue(L, -1);
@@ -803,6 +814,7 @@ namespace lni {
 			else {
 				lua_remove(L, -2);
 			}
+			lua_pushvalue(L, -1);
 			return true;
 		}
 		void accept_section_array() {
