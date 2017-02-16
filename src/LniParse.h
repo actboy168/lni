@@ -649,6 +649,9 @@ namespace lni {
 		template <class Handler>
 		bool parse_object(Handler& h)
 		{
+			if (!equal(z, '[')) {
+				return error(h, "'[' expected near '%c'", *z);
+			}
 			if (!parse_section(h)) {
 				return false;
 			}
