@@ -125,6 +125,24 @@ namespace lni {
 			}
 		}
 
+		template <class Handler>
+		void parse_whitespace_and_comments_or_execute(Handler& h)
+		{
+			parse_whitespace();
+			for (; z[0] == '-' && z[1] == '-';) {
+				if (z[2] == '!') {
+					z += 3;
+					const char* start = z;
+					for (; !equal(z, "\n\r") && !equal(z, '\0'); z++);
+					h.accept_execute(start, z);
+				}
+				else {
+					for (z += 2; !equal(z, "\n\r") && !equal(z, '\0'); z++);
+				}
+				parse_whitespace();
+			}
+		}
+
 		void parse_whitespace_and_comments()
 		{
 			parse_whitespace();
@@ -655,12 +673,12 @@ namespace lni {
 			if (!parse_section(h)) {
 				return false;
 			}
-			parse_whitespace_and_comments();
+			parse_whitespace_and_comments_or_execute(h);
 			while (!equal(z, "[\0")) {
 				if (!parse_set(h)) {
 					return false;
 				}
-				parse_whitespace_and_comments();
+				parse_whitespace_and_comments_or_execute(h);
 			}
 			h.accept_object();
 			return true;
@@ -670,12 +688,12 @@ namespace lni {
 		bool parse(Handler& h)
 		{
 			h.accept_root();
-			parse_whitespace_and_comments();
+			parse_whitespace_and_comments_or_execute(h);
 			while (!equal(z, '\0')) {
 				if (!parse_object(h)) {
 					return false;
 				}
-				parse_whitespace_and_comments();
+				parse_whitespace_and_comments_or_execute(h);
 			}
 			h.accept_root_end();
 			return true;
@@ -768,17 +786,20 @@ namespace lni {
 		int t_main = 0;
 		int t_default = 0;
 		int t_enum = 0;
+		int t_env = 0;
 
 		handler(lua_State* L)
 			: simple_handler(L)
 		{}
 		void accept_root() {
+			// env
 			// main
 			// default
 			// enum
 			t_enum = lua_gettop(L);
 			t_default = t_enum - 1;
 			t_main = t_default - 1;
+			t_env = t_main - 1;
 			lua_pushvalue(L, t_main);
 		}
 		bool accept_section(bool has_root) {
@@ -884,6 +905,20 @@ namespace lni {
 			}
 			lua_pop(L, 1);
 			return false;
+		}
+		void accept_execute(const char* start, const char* end) {
+			if (luaL_loadbuffer(L, start, end - start, "=(lni-exec)")) {
+				lua_error(L);
+				return;
+			}
+			lua_pushvalue(L, t_env);
+			if (!lua_setupvalue(L, -2, 1)) {
+				lua_pop(L, 1);
+			}
+			if (lua_pcall(L, 0, 0, 0)) {
+				lua_error(L);
+				return;
+			}
 		}
 	};
 }
