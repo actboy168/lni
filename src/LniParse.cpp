@@ -14,7 +14,7 @@ namespace lni
 			}
 			lua_newtable(L);
 			lua_copytable(L, -2, -1);
-			lua_remove(L, -2);
+			lua_rawseti(L, t, from);
 		}
 		lua_rawseti(L, t, to);
 	}
