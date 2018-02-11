@@ -18,7 +18,7 @@
     <ClInclude Include="..\src\LniParse.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="luacore.vcxproj">
+    <ProjectReference Include="lua53.vcxproj">
       <Project>{b84f7231-16ce-41d8-8c08-7b523ff4225b}</Project>
     </ProjectReference>
   </ItemGroup>
@@ -90,6 +90,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>_WIN32_WINNT=_WIN32_WINNT_WIN7;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)..\src;$(SolutionDir)..\src\lua</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
