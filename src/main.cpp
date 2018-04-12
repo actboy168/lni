@@ -26,7 +26,7 @@ namespace lni
 	int init(lua_State* L)
 	{
 		luaL_checkversion(L);
-		luaL_requiref(L, "lni-c", open, 0);
+		luaL_requiref(L, "lni", open, 0);
 		lua_pop(L, 1);
 		return 0;
 	}
