@@ -1,6 +1,6 @@
 package.cpath = package.cpath .. [[;.\..\bin\Debug\?.dll]]
 
-local lni = require 'lni-c'
+local lni = require 'lni'
 local print_r = require 'print_r'
 
 function LOAD(filename)
@@ -278,6 +278,17 @@ TEST([==[
 {
   A = { a = 1, B = { b = 2 }, C = { c = 3 } },
   D = { d = 4, E = { e = 5 } }
+}
+)
+
+TEST([==[
+[A]
+A1 = B 
+A2 = B
+]==]
+,
+{
+  A = { A1 = "B", A2 = "B" }
 }
 )
 

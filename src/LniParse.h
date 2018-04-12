@@ -502,7 +502,7 @@ namespace lni {
 				if (h.accept_identifier(beg, end - beg + 1))
 					return;
 			}
-			h.accept_string(str, len);
+			h.accept_string(beg, end - beg + 1);
 		}
 
 		template <class Handler>
