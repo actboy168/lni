@@ -1,5 +1,5 @@
 /*
-** $Id: lauxlib.c,v 1.286 2016/01/08 15:33:09 roberto Exp $
+** $Id: lauxlib.c,v 1.295 2018/06/18 12:08:10 roberto Exp $
 ** Auxiliary functions for building Lua libraries
 ** See Copyright Notice in lua.h
 */
@@ -69,15 +69,14 @@ static int findfield (lua_State *L, int objidx, int level) {
 
 /*
 ** Search for a name for a function in all loaded modules
-** (registry._LOADED).
 */
 static int pushglobalfuncname (lua_State *L, lua_Debug *ar) {
   int top = lua_gettop(L);
   lua_getinfo(L, "f", ar);  /* push function */
-  lua_getfield(L, LUA_REGISTRYINDEX, "_LOADED");
+  lua_getfield(L, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
   if (findfield(L, top + 1, 2)) {
     const char *name = lua_tostring(L, -1);
-    if (strncmp(name, "_G.", 3) == 0) {  /* name start with '_G.'? */
+    if (strncmp(name, LUA_GNAME ".", 3) == 0) {  /* name start with '_G.'? */
       lua_pushstring(L, name + 3);  /* push name without prefix */
       lua_remove(L, -2);  /* remove original name */
     }
@@ -481,10 +480,10 @@ static int boxgc (lua_State *L) {
 
 
 static void *newbox (lua_State *L, size_t newsize) {
-  UBox *box = (UBox *)lua_newuserdata(L, sizeof(UBox));
+  UBox *box = (UBox *)lua_newuserdatauv(L, sizeof(UBox), 0);
   box->box = NULL;
   box->bsize = 0;
-  if (luaL_newmetatable(L, "LUABOX")) {  /* creating metatable? */
+  if (luaL_newmetatable(L, "_UBOX*")) {  /* creating metatable? */
     lua_pushcfunction(L, boxgc);
     lua_setfield(L, -2, "__gc");  /* metatable.__gc = boxgc */
   }
@@ -497,7 +496,7 @@ static void *newbox (lua_State *L, size_t newsize) {
 ** check whether buffer is using a userdata on the stack as a temporary
 ** buffer
 */
-#define buffonstack(B)	((B)->b != (B)->initb)
+#define buffonstack(B)	((B)->b != (B)->init.b)
 
 
 /*
@@ -569,7 +568,7 @@ LUALIB_API void luaL_addvalue (luaL_Buffer *B) {
 
 LUALIB_API void luaL_buffinit (lua_State *L, luaL_Buffer *B) {
   B->L = L;
-  B->b = B->initb;
+  B->b = B->init.b;
   B->n = 0;
   B->size = LUAL_BUFFERSIZE;
 }
@@ -809,13 +808,17 @@ LUALIB_API lua_Integer luaL_len (lua_State *L, int idx) {
 
 
 LUALIB_API const char *luaL_tolstring (lua_State *L, int idx, size_t *len) {
-  if (!luaL_callmeta(L, idx, "__tostring")) {  /* no metafield? */
+  if (luaL_callmeta(L, idx, "__tostring")) {  /* metafield? */
+    if (!lua_isstring(L, -1))
+      luaL_error(L, "'__tostring' must return a string");
+  }
+  else {
     switch (lua_type(L, idx)) {
       case LUA_TNUMBER: {
         if (lua_isinteger(L, idx))
-          lua_pushfstring(L, "%I", lua_tointeger(L, idx));
+          lua_pushfstring(L, "%I", (LUAI_UACINT)lua_tointeger(L, idx));
         else
-          lua_pushfstring(L, "%f", lua_tonumber(L, idx));
+          lua_pushfstring(L, "%f", (LUAI_UACNUMBER)lua_tonumber(L, idx));
         break;
       }
       case LUA_TSTRING:
@@ -827,96 +830,20 @@ LUALIB_API const char *luaL_tolstring (lua_State *L, int idx, size_t *len) {
       case LUA_TNIL:
         lua_pushliteral(L, "nil");
         break;
-      default:
-        lua_pushfstring(L, "%s: %p", luaL_typename(L, idx),
-                                            lua_topointer(L, idx));
+      default: {
+        int tt = luaL_getmetafield(L, idx, "__name");  /* try name */
+        const char *kind = (tt == LUA_TSTRING) ? lua_tostring(L, -1) :
+                                                 luaL_typename(L, idx);
+        lua_pushfstring(L, "%s: %p", kind, lua_topointer(L, idx));
+        if (tt != LUA_TNIL)
+          lua_remove(L, -2);  /* remove '__name' */
         break;
+      }
     }
   }
   return lua_tolstring(L, -1, len);
 }
 
-
-/*
-** {======================================================
-** Compatibility with 5.1 module functions
-** =======================================================
-*/
-#if defined(LUA_COMPAT_MODULE)
-
-static const char *luaL_findtable (lua_State *L, int idx,
-                                   const char *fname, int szhint) {
-  const char *e;
-  if (idx) lua_pushvalue(L, idx);
-  do {
-    e = strchr(fname, '.');
-    if (e == NULL) e = fname + strlen(fname);
-    lua_pushlstring(L, fname, e - fname);
-    if (lua_rawget(L, -2) == LUA_TNIL) {  /* no such field? */
-      lua_pop(L, 1);  /* remove this nil */
-      lua_createtable(L, 0, (*e == '.' ? 1 : szhint)); /* new table for field */
-      lua_pushlstring(L, fname, e - fname);
-      lua_pushvalue(L, -2);
-      lua_settable(L, -4);  /* set new table into field */
-    }
-    else if (!lua_istable(L, -1)) {  /* field has a non-table value? */
-      lua_pop(L, 2);  /* remove table and value */
-      return fname;  /* return problematic part of the name */
-    }
-    lua_remove(L, -2);  /* remove previous table */
-    fname = e + 1;
-  } while (*e == '.');
-  return NULL;
-}
-
-
-/*
-** Count number of elements in a luaL_Reg list.
-*/
-static int libsize (const luaL_Reg *l) {
-  int size = 0;
-  for (; l && l->name; l++) size++;
-  return size;
-}
-
-
-/*
-** Find or create a module table with a given name. The function
-** first looks at the _LOADED table and, if that fails, try a
-** global variable with that name. In any case, leaves on the stack
-** the module table.
-*/
-LUALIB_API void luaL_pushmodule (lua_State *L, const char *modname,
-                                 int sizehint) {
-  luaL_findtable(L, LUA_REGISTRYINDEX, "_LOADED", 1);  /* get _LOADED table */
-  if (lua_getfield(L, -1, modname) != LUA_TTABLE) {  /* no _LOADED[modname]? */
-    lua_pop(L, 1);  /* remove previous result */
-    /* try global variable (and create one if it does not exist) */
-    lua_pushglobaltable(L);
-    if (luaL_findtable(L, 0, modname, sizehint) != NULL)
-      luaL_error(L, "name conflict for module '%s'", modname);
-    lua_pushvalue(L, -1);
-    lua_setfield(L, -3, modname);  /* _LOADED[modname] = new table */
-  }
-  lua_remove(L, -2);  /* remove _LOADED table */
-}
-
-
-LUALIB_API void luaL_openlib (lua_State *L, const char *libname,
-                               const luaL_Reg *l, int nup) {
-  luaL_checkversion(L);
-  if (libname) {
-    luaL_pushmodule(L, libname, libsize(l));  /* get/create library table */
-    lua_insert(L, -(nup + 1));  /* move library table to below upvalues */
-  }
-  if (l)
-    luaL_setfuncs(L, l, nup);
-  else
-    lua_pop(L, nup);  /* remove upvalues */
-}
-
-#endif
-/* }====================================================== */
 
 /*
 ** set functions from list 'l' into table at top - 'nup'; each
@@ -962,17 +889,17 @@ LUALIB_API int luaL_getsubtable (lua_State *L, int idx, const char *fname) {
 */
 LUALIB_API void luaL_requiref (lua_State *L, const char *modname,
                                lua_CFunction openf, int glb) {
-  luaL_getsubtable(L, LUA_REGISTRYINDEX, "_LOADED");
-  lua_getfield(L, -1, modname);  /* _LOADED[modname] */
+  luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
+  lua_getfield(L, -1, modname);  /* LOADED[modname] */
   if (!lua_toboolean(L, -1)) {  /* package not already loaded? */
     lua_pop(L, 1);  /* remove field */
     lua_pushcfunction(L, openf);
     lua_pushstring(L, modname);  /* argument to open function */
     lua_call(L, 1, 1);  /* call 'openf' to open module */
     lua_pushvalue(L, -1);  /* make copy of module (call result) */
-    lua_setfield(L, -3, modname);  /* _LOADED[modname] = module */
+    lua_setfield(L, -3, modname);  /* LOADED[modname] = module */
   }
-  lua_remove(L, -2);  /* remove _LOADED table */
+  lua_remove(L, -2);  /* remove LOADED table */
   if (glb) {
     lua_pushvalue(L, -1);  /* copy of module */
     lua_setglobal(L, modname);  /* _G[modname] = module */
@@ -1023,13 +950,11 @@ LUALIB_API lua_State *luaL_newstate (void) {
 
 
 LUALIB_API void luaL_checkversion_ (lua_State *L, lua_Number ver, size_t sz) {
-  const lua_Number *v = lua_version(L);
+  lua_Number v = lua_version(L);
   if (sz != LUAL_NUMSIZES)  /* check numeric types */
     luaL_error(L, "core and library have incompatible numeric types");
-  if (v != lua_version(NULL))
-    luaL_error(L, "multiple Lua VMs detected");
-  else if (*v != ver)
+  else if (v != ver)
     luaL_error(L, "version mismatch: app. needs %f, Lua core provides %f",
-                  ver, *v);
+                  (LUAI_UACNUMBER)ver, (LUAI_UACNUMBER)v);
 }
 

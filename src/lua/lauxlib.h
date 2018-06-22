@@ -1,5 +1,5 @@
 /*
-** $Id: lauxlib.h,v 1.129 2015/11/23 11:29:43 roberto Exp $
+** $Id: lauxlib.h,v 1.134 2018/02/27 18:47:32 roberto Exp $
 ** Auxiliary functions for building Lua libraries
 ** See Copyright Notice in lua.h
 */
@@ -15,9 +15,21 @@
 #include "lua.h"
 
 
+/* global table */
+#define	LUA_GNAME	"_G"
 
-/* extra error code for 'luaL_load' */
+
+
+/* extra error code for 'luaL_loadfilex' */
 #define LUA_ERRFILE     (LUA_ERRERR+1)
+
+
+/* key, in the registry, for table of loaded modules */
+#define LUA_LOADED_TABLE	"_LOADED"
+
+
+/* key, in the registry, for table of preloaded loaders */
+#define LUA_PRELOAD_TABLE	"_PRELOAD"
 
 
 typedef struct luaL_Reg {
@@ -142,7 +154,10 @@ typedef struct luaL_Buffer {
   size_t size;  /* buffer size */
   size_t n;  /* number of characters in buffer */
   lua_State *L;
-  char initb[LUAL_BUFFERSIZE];  /* initial buffer */
+  union {
+    LUAI_MAXALIGN;  /* ensure maximum alignment for buffer */
+    char b[LUAL_BUFFERSIZE];  /* initial buffer */
+  } init;
 } luaL_Buffer;
 
 
@@ -188,21 +203,6 @@ typedef struct luaL_Stream {
 } luaL_Stream;
 
 /* }====================================================== */
-
-
-
-/* compatibility with old module system */
-#if defined(LUA_COMPAT_MODULE)
-
-LUALIB_API void (luaL_pushmodule) (lua_State *L, const char *modname,
-                                   int sizehint);
-LUALIB_API void (luaL_openlib) (lua_State *L, const char *libname,
-                                const luaL_Reg *l, int nup);
-
-#define luaL_register(L,n,l)	(luaL_openlib(L,(n),(l),0))
-
-#endif
-
 
 /*
 ** {==================================================================
