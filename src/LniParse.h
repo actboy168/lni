@@ -373,8 +373,8 @@ namespace lni {
 						return false;
 					}
 					h.accept_table_hash();
+					parse_whitespace_and_comments();
 				}
-				parse_whitespace_and_comments();
 				if (consume(z, '}')) {
 					return true;
 				}
@@ -402,9 +402,7 @@ namespace lni {
 				for (;;) {
 					switch (*z) {
 					case '=':
-					case ':':
 					case ',':
-					case ']':
 					case '\n':
 					case '\r':
 					case '\t':
@@ -435,9 +433,7 @@ namespace lni {
 				for (;;) {
 					switch (*z) {
 					case '=':
-					case ':':
 					case ',':
-					case ']':
 					case '\n':
 					case '\r':
 					case '\t':
