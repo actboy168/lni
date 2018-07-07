@@ -1,6 +1,6 @@
 package.cpath = package.cpath .. [[;.\..\bin\Debug\?.dll]]
 
-local lni = require 'lni'
+local lni = (require 'lni').classics
 local print_r = require 'print_r'
 
 function LOAD(filename)
@@ -57,6 +57,8 @@ c = {'1', '2', '3'}
   x = 2,
   y = 4,
 }
+e = true
+f = nil
 10 = [[
    | H
    | e
@@ -72,6 +74,7 @@ a = 'Hello',
 b = 1.0,
 c = {'1', '2', '3'},
 d = { x = 2, y = 4 },
+e = true,
 [10] = [[
    | H
    | e
@@ -289,6 +292,47 @@ A2 = B
 ,
 {
   A = { A1 = "B", A2 = "B" }
+}
+)
+
+lni = (require 'lni').no_convert
+TEST(
+[==[
+[ABC]
+a = 'Hello'
+b = 1.0
+c = {'1', '2', '3'}
+'d' = {
+  x = 2,
+  y = 4,
+}
+e = true
+f = nil
+10 = [[
+   | H
+   | e
+   | l
+   | l
+   | o
+]]
+]==]
+,
+{
+ABC = {
+a = 'Hello',
+b = '1.0',
+c = {'1', '2', '3'},
+d = { x = '2', y = '4' },
+e = 'true',
+f = 'nil',
+[10] = [[
+   | H
+   | e
+   | l
+   | l
+   | o
+]]
+  }
 }
 )
 

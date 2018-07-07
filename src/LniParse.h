@@ -85,6 +85,7 @@ namespace lni {
 		return false;
 	}
 
+	template <bool Convert>
 	struct lex {
 		const char* z;
 		int line = 1;
@@ -359,7 +360,7 @@ namespace lni {
 				if (consume(z, '}')) {
 					return true;
 				}
-				if (!parse_value(h)) {
+				if (!parse_value<Handler, Convert>(h)) {
 					return false;
 				}
 				parse_whitespace_and_comments();
@@ -368,7 +369,7 @@ namespace lni {
 				}
 				else {
 					parse_whitespace_and_comments();
-					if (!parse_value(h)) {
+					if (!parse_value<Handler, Convert>(h)) {
 						return false;
 					}
 					h.accept_table_hash();
@@ -384,8 +385,8 @@ namespace lni {
 			return true;
 		}
 
-		template <class Handler>
-		bool parse_value(Handler& h)
+		template <class Handler, bool Convert>
+		bool parse_value(Handler& h, typename std::enable_if<Convert>::type* = 0)
 		{
 			switch (*z) {
 			case '{':  return parse_table(h);
@@ -409,7 +410,7 @@ namespace lni {
 					case '\t':
 					case '\0':
 					case ' ':
-						parse_identifier(h, p, z - p);
+						parse_identifier<Handler, Convert>(h, p, z - p);
 						return true;
 					default:
 						z++;
@@ -420,8 +421,41 @@ namespace lni {
 			}
 		}
 
-		template <class Handler>
-		bool parse_value_ext(Handler& h)
+		template <class Handler, bool Convert>
+		bool parse_value(Handler& h, typename std::enable_if<!Convert>::type* = 0)
+		{
+			switch (*z) {
+			case '{':  return parse_table(h);
+			case '[':  return parse_long_string(h);
+			case '"': case '\'': return parse_string(h, *z);
+			case '\0':
+				return error(h, "unexpected symbol near <eof>");
+			default: {
+				const char* p = z;
+				for (;;) {
+					switch (*z) {
+					case '=':
+					case ':':
+					case ',':
+					case ']':
+					case '\n':
+					case '\r':
+					case '\t':
+					case '\0':
+					case ' ':
+						parse_identifier<Handler, Convert>(h, p, z - p);
+						return true;
+					default:
+						z++;
+						break;
+					}
+				}
+			}
+			}
+		}
+
+		template <class Handler, bool Convert>
+		bool parse_value_ext(Handler& h, typename std::enable_if<Convert>::type* = 0)
 		{
 			switch (*z) {
 			case '{':  return parse_table(h);
@@ -439,11 +473,43 @@ namespace lni {
 					case '\n':
 					case '\r':
 					case '\0':
-						parse_identifier(h, p, z - p);
+						parse_identifier<Handler, Convert>(h, p, z - p);
 						return true;
 					case '-':
 						if (z[1] == '-') {
-							parse_identifier(h, p, z - p);
+							parse_identifier<Handler, Convert>(h, p, z - p);
+							return true;
+						}
+					default:
+						z++;
+						break;
+					}
+				}
+			}
+			}
+		}
+
+		template <class Handler, bool Convert>
+		bool parse_value_ext(Handler& h, typename std::enable_if<!Convert>::type* = 0)
+		{
+			switch (*z) {
+			case '{':  return parse_table(h);
+			case '[':  return parse_long_string(h);
+			case '"': case '\'': return parse_string(h, *z);
+			case '\0':
+				return error(h, "unexpected symbol near <eof>");
+			default: {
+				const char* p = z;
+				for (;;) {
+					switch (*z) {
+					case '\n':
+					case '\r':
+					case '\0':
+						parse_identifier<Handler, Convert>(h, p, z - p);
+						return true;
+					case '-':
+						if (z[1] == '-') {
+							parse_identifier<Handler, Convert>(h, p, z - p);
 							return true;
 						}
 					default:
@@ -481,8 +547,8 @@ namespace lni {
 			return false;
 		}
 
-		template <class Handler>
-		void parse_identifier(Handler& h, const char* str, size_t len)
+		template <class Handler, bool Convert>
+		void parse_identifier(Handler& h, const char* str, size_t len, typename std::enable_if<Convert>::type* = 0)
 		{
 			const char* beg = str;
 			const char* end = str + len - 1;
@@ -499,6 +565,28 @@ namespace lni {
 			if (beg < end) {
 				if (parse_keyword(h, beg, end - beg + 1))
 					return;
+				if (h.accept_identifier(beg, end - beg + 1))
+					return;
+			}
+			h.accept_string(beg, end - beg + 1);
+		}
+
+		template <class Handler, bool Convert>
+		void parse_identifier(Handler& h, const char* str, size_t len, typename std::enable_if<!Convert>::type* = 0)
+		{
+			const char* beg = str;
+			const char* end = str + len - 1;
+			for (; beg <= end; ++beg) {
+				if (!equal(beg, " \t")) {
+					break;
+				}
+			}
+			for (; beg <= end; --end) {
+				if (!equal(end, " \t")) {
+					break;
+				}
+			}
+			if (beg < end) {
 				if (h.accept_identifier(beg, end - beg + 1))
 					return;
 			}
@@ -657,7 +745,7 @@ namespace lni {
 				return error(h, "'=' expected near '%c'", *z);
 			}
 			parse_whitespace_and_comments();
-			if (!parse_value_ext(h)) {
+			if (!parse_value_ext<Handler, Convert>(h)) {
 				return false;
 			}
 			h.accept_set();
