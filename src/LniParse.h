@@ -756,11 +756,15 @@ namespace lni {
 		}
 	}
 
-	struct simple_handler
+	struct handler
 	{
 		lua_State* L;
+		int t_main = 0;
+		int t_default = 0;
+		int t_enum = 0;
+		int t_env = 0;
 
-		simple_handler(lua_State* L)
+		handler(lua_State* L)
 			: L(L)
 		{}
 
@@ -804,34 +808,11 @@ namespace lni {
 		void accept_object() {
 			lua_pop(L, 1);
 		}
-		void accept_root() {
-			lua_newtable(L);
-			lua_pushvalue(L, -1);
-		}
-		void accept_root_end() {
-			lua_pop(L, 1);
-		}
-		bool accept_identifier(const char* str, size_t len) {
-			return false;
-		}
 		template <class ... Args>
 		void accept_error(int line, const char* fmt, const Args& ... args) {
 			lua_pushinteger(L, line);
 			lua_pushfstring(L, fmt, args...);
 		}
-	};
-
-	struct handler
-		: public simple_handler
-	{
-		int t_main = 0;
-		int t_default = 0;
-		int t_enum = 0;
-		int t_env = 0;
-
-		handler(lua_State* L)
-			: simple_handler(L)
-		{}
 		void accept_root() {
 			// env
 			// main
@@ -842,6 +823,9 @@ namespace lni {
 			t_main = t_default - 1;
 			t_env = t_main - 1;
 			lua_pushvalue(L, t_main);
+		}
+		void accept_root_end() {
+			lua_pop(L, 1);
 		}
 		bool accept_section(bool has_root) {
 			if (!has_root) {
