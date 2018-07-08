@@ -392,7 +392,7 @@ namespace lni {
 			case '{':  return parse_table(h);
 			case '[':  return parse_long_string(h);
 			case '"': case '\'': return parse_string(h, *z);
-			case '-':
+			case '-': case '+': case '.':
 			case '0': case '1': case '2': case '3': case '4':
 			case '5': case '6': case '7': case '8': case '9': return parse_number(h);
 			case '\0':
@@ -459,7 +459,7 @@ namespace lni {
 			case '{':  return parse_table(h);
 			case '[':  return parse_long_string(h);
 			case '"': case '\'': return parse_string(h, *z);
-			case '-':
+			case '-': case '+': case '.':
 			case '0': case '1': case '2': case '3': case '4':
 			case '5': case '6': case '7': case '8': case '9': return parse_number(h);
 			case '\0':
@@ -596,7 +596,7 @@ namespace lni {
 		{
 			switch (*z) {
 			case '"': case '\'': return parse_string(h, *z);
-			case '-':
+			case '-': case '+':
 			case '0': case '1': case '2': case '3': case '4':
 			case '5': case '6': case '7': case '8': case '9': return parse_number(h);
 			case '\0':
