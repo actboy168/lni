@@ -306,7 +306,8 @@ namespace lni {
 				if (consume(z, '}')) {
 					return true;
 				}
-				if (!parse_value<Handler, Convert>(h)) {
+				bool number = false;
+				if (!parse_value<Handler, Convert>(h, number)) {
 					return false;
 				}
 				parse_whitespace_and_comments();
@@ -315,10 +316,10 @@ namespace lni {
 				}
 				else {
 					parse_whitespace_and_comments();
-					if (!parse_value<Handler, Convert>(h)) {
+					if (!parse_value<Handler, Convert>(h, number)) {
 						return false;
 					}
-					h.accept_table_hash();
+					h.accept_table_hash(Convert ? false : number);
 					parse_whitespace_and_comments();
 				}
 				if (consume(z, '}')) {
@@ -332,7 +333,7 @@ namespace lni {
 		}
 
 		template <class Handler, bool Convert>
-		bool parse_value(Handler& h, typename std::enable_if<Convert>::type* = 0)
+		bool parse_value(Handler& h, bool& number, typename std::enable_if<Convert>::type* = 0)
 		{
 			switch (*z) {
 			case '{':  return parse_table(h);
@@ -367,7 +368,7 @@ namespace lni {
 		}
 
 		template <class Handler, bool Convert>
-		bool parse_value(Handler& h, typename std::enable_if<!Convert>::type* = 0)
+		bool parse_value(Handler& h, bool& number, typename std::enable_if<!Convert>::type* = 0)
 		{
 			switch (*z) {
 			case '{':  return parse_table(h);
@@ -376,6 +377,7 @@ namespace lni {
 			case '\0':
 				return error(h, "unexpected symbol near <eof>");
 			default: {
+				number = true;
 				const char* p = z;
 				for (;;) {
 					switch (*z) {
@@ -796,7 +798,16 @@ namespace lni {
 			lua_newtable(L);
 			ary = 1;
 		}
-		void accept_table_hash() {
+		void accept_table_hash(bool number) {
+			if (number) {
+				size_t len = 0;
+				const char* str = luaL_checklstring(L, -2, &len);
+				if (str[0] == '-' || is_digit(str[0])) {
+					if (lua_stringtonumber(L, str) == len + 1) {
+						lua_replace(L, -3);
+					}
+				}
+			}
 			lua_rawset(L, -3);
 		}
 		void accept_table_array(int& ary) {
