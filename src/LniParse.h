@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 #include <stdint.h>
 #include <assert.h>
 #include <errno.h>
@@ -10,11 +11,12 @@
 
 namespace lni {
 
-	enum class ctype {
+	enum class ctype : uint8_t {
 		none = 0,
 		digit = 1,
 		alpha = 2,
 		underscode = 4,
+		hexdigit = digit & alpha,
 	};
 
 	static ctype ctypemap[256] = {
@@ -22,9 +24,9 @@ namespace lni {
 		/*0x10*/ ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none,
 		/*0x20*/ ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none,
 		/*0x30*/ ctype::digit, ctype::digit, ctype::digit, ctype::digit, ctype::digit, ctype::digit, ctype::digit, ctype::digit, ctype::digit, ctype::digit, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none,
-		/*0x40*/ ctype::none, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha,
+		/*0x40*/ ctype::none, ctype::hexdigit, ctype::hexdigit, ctype::hexdigit, ctype::hexdigit, ctype::hexdigit, ctype::hexdigit, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha,
 		/*0x50*/ ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::none, ctype::none, ctype::none, ctype::none, ctype::underscode,
-		/*0x60*/ ctype::none, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha,
+		/*0x60*/ ctype::none, ctype::hexdigit, ctype::hexdigit, ctype::hexdigit, ctype::hexdigit, ctype::hexdigit, ctype::hexdigit, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha,
 		/*0x70*/ ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::alpha, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none,
 		/*0x80*/ ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none,
 		/*0x90*/ ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none, ctype::none,
@@ -49,7 +51,7 @@ namespace lni {
 
 	inline bool is_hexdigit(char c)
 	{
-		return ctypemap[c] == ctype::digit;
+		return (uint8_t)ctypemap[c] & (uint8_t)ctype::digit;
 	}
 
 	inline bool is_alpha_or_underscode(char c)
@@ -169,86 +171,25 @@ namespace lni {
 		bool parse_number(Handler& h)
 		{
 			const char* p = z;
-			bool isint = true;
-			int64_t i64 = 0;
-			int exp = 0;
-			bool minus = consume(p, '-');
-			if (consume(p, '0'))
-			{
-				if (consume(p, "xX"))
-				{
-					for (;; p++)
-					{
-						if (*p >= '0' && *p <= '9') {
-							if (i64 >= 0x0800000000000000) {
-								return error(h, "integer too big near '%s'", std::string(z, p - z).c_str());
-							}
-							i64 <<= 4;
-							i64 += *p - '0';
-						}
-						else if (*p >= 'A' && *p <= 'F') {
-							if (i64 >= 0x0800000000000000) {
-								return error(h, "integer too big near '%s'", std::string(z, p - z).c_str());
-							}
-							i64 <<= 4;
-							i64 += *p - 'A' + 10;
-						}
-						else if (*p >= 'a' && *p <= 'f') {
-							if (i64 >= 0x0800000000000000) {
-								return error(h, "integer too big near '%s'", std::string(z, p - z).c_str());
-							}
-							i64 <<= 4;
-							i64 += *p - 'a' + 10;
-						}
-						else {
-							break;
-						}
-					}
-					z = p;
-					h.accept_integer(minus ? -i64 : i64);
-					return true;
+			const char *expo = "Ee";
+			bool minus = consume(z, '-');
+			if (consume(z, '0')) {
+				if (consume(z, "xX")) {
+					expo = "Pp";
 				}
 			}
-			else
-			{
-				if (!is_digit(*p))
-					return error(h, "invalid number near '%s'", std::string(z, p - z + 1).c_str());
-				i64 *= 10;
-				i64 += *p - '0';
-				for (p++; is_digit(*p); p++)
-				{
-					// 2^63 = 9223372036854775808
-					if (i64 > 0x0CCCCCCCCCCCCCCC || (i64 == 0x0CCCCCCCCCCCCCCC && *p == '9')) {
-						return error(h, "integer too big near '%s'", std::string(z, p - z).c_str());
-					}
-					i64 *= 10;
-					i64 += *p - '0';
-				}
+			for (;;) {
+				if (consume(z, expo))
+					consume(z, "-+");
+				if (is_hexdigit(*z))
+					z++;
+				else if (*z == '.')
+					z++;
+				else break;
 			}
-			if (consume(p, '.')) {
-				isint = false;
-				if (!is_digit(*p))
-					return error(h, "invalid number near '%s'", std::string(z, p - z).c_str());
-				for (p++; is_digit(*p); p++);
+			if (!h.accept_number(p, z - p)) {
+				return error(h, "malformed number");
 			}
-			if (consume(p, "eE")) {
-				isint = false;
-				if (equal(p, "+-")) p++;
-				if (!is_digit(*p))
-					return error(h, "invalid number near '%s'", std::string(z, p - z).c_str());
-				for (p++; is_digit(*p); p++);
-			}
-			if (isint)  {
-				z = p;
-				h.accept_integer(minus ? -i64 : i64);
-				return true;
-			}
-			errno = 0;
-			double d = strtod(z, NULL);
-			if (errno == ERANGE && (d == HUGE_VAL || d == -HUGE_VAL))
-				return error(h, "double too big near '%s'", std::string(z, p - z).c_str());
-			z = p;
-			h.accept_double(d);
 			return true;
 		}
 
@@ -402,7 +343,7 @@ namespace lni {
 			case '5': case '6': case '7': case '8': case '9': return parse_number(h);
 			case '\0':
 				return error(h, "unexpected symbol near <eof>");
-			default:  {
+			default: {
 				const char* p = z;
 				for (;;) {
 					switch (*z) {
@@ -469,7 +410,7 @@ namespace lni {
 			case '5': case '6': case '7': case '8': case '9': return parse_number(h);
 			case '\0':
 				return error(h, "unexpected symbol near <eof>");
-			default:  {
+			default: {
 				const char* p = z;
 				for (;;) {
 					switch (*z) {
@@ -613,7 +554,7 @@ namespace lni {
 			}
 			const char* p = z;
 			for (;;) {
-				switch (*z)	 {
+				switch (*z) {
 				case '=':
 				case '.':
 				case '\n':
@@ -642,7 +583,7 @@ namespace lni {
 			}
 			const char* p = z;
 			for (;;) {
-				switch (*z)	 {
+				switch (*z) {
 				case ':':
 				case '.':
 				case '[':
@@ -834,6 +775,15 @@ namespace lni {
 		}
 		void accept_double(double d) {
 			lua_pushnumber(L, d);
+		}
+		size_t accept_number(const char* str, size_t len) {
+			if (len > 200) {
+				return 0;
+			}
+			char tmp[200 + 1];
+			memcpy(tmp, str, len);
+			tmp[len] = 0;
+			return lua_stringtonumber(L, tmp);
 		}
 		void accept_string(const char* str, size_t len) {
 			lua_pushlstring(L, str, len);
