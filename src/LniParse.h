@@ -914,10 +914,11 @@ namespace lni {
 			lua_pushvalue(L, -1);
 			if (LUA_TTABLE != lua_rawget(L, t_main)) {
 				lua_pop(L, 1);
+				lua_pushvalue(L, -1);
 				lua_newtable(L);
 				lua_pushvalue(L, -1);
 				lua_insert(L, -3);
-				lua_settable(L, -4);
+				lua_settable(L, t_main);
 			}
 			lua_remove(L, -2);
 		}

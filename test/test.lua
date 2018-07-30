@@ -310,6 +310,19 @@ mi = -1.01
 }
 )
 
+TEST([==[
+[a:b]
+[c:d]
+]==]
+,
+{
+  a = {},
+  b = {},
+  c = {},
+  d = {},
+}
+)
+
 lni = (require 'lni').no_convert
 TEST(
 [==[
