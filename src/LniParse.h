@@ -3,10 +3,11 @@
 #include <vector>
 #include <memory>
 #include <stdint.h>
+#include <string.h>
 #include <assert.h>
 #include <errno.h>
 #include <math.h>
-#include <stdlib.h>	  
+#include <stdlib.h>	
 #include <lua.hpp>
 
 namespace lni {
@@ -46,22 +47,22 @@ namespace lni {
 
 	inline bool is_digit(char c)
 	{
-		return ctypemap[c] == ctype::digit;
+		return ctypemap[(unsigned char)c] == ctype::digit;
 	}
 
 	inline bool is_hexdigit(char c)
 	{
-		return (uint8_t)ctypemap[c] & (uint8_t)ctype::digit;
+		return (uint8_t)ctypemap[(unsigned char)c] & (uint8_t)ctype::digit;
 	}
 
 	inline bool is_alpha_or_underscode(char c)
 	{
-		return !!((int)ctypemap[c] & ((int)ctype::alpha | (int)ctype::underscode));
+		return !!((int)ctypemap[(unsigned char)c] & ((int)ctype::alpha | (int)ctype::underscode));
 	}
 
 	inline bool is_alnum_or_underscode(char c)
 	{
-		return !!((int)ctypemap[c] & ((int)ctype::alpha | (int)ctype::digit | (int)ctype::underscode));
+		return !!((int)ctypemap[(unsigned char)c] & ((int)ctype::alpha | (int)ctype::digit | (int)ctype::underscode));
 	}
 
 	inline bool equal(const char* p, const char c)
@@ -172,7 +173,7 @@ namespace lni {
 		{
 			const char* p = z;
 			const char *expo = "Ee";
-			bool minus = consume(z, '-');
+			consume(z, '-');
 			if (consume(z, '0')) {
 				if (consume(z, "xX")) {
 					expo = "Pp";
@@ -332,8 +333,8 @@ namespace lni {
 			return true;
 		}
 
-		template <class Handler, bool Convert>
-		bool parse_value(Handler& h, bool& number, typename std::enable_if<Convert>::type* = 0)
+		template <class Handler, bool Convert_>
+		bool parse_value(Handler& h, bool& number, typename std::enable_if<Convert_>::type* = 0)
 		{
 			switch (*z) {
 			case '{':  return parse_table(h);
@@ -356,7 +357,7 @@ namespace lni {
 					case '\t':
 					case '\0':
 					case ' ':
-						parse_identifier<Handler, Convert>(h, p, z - p);
+						parse_identifier<Handler, Convert_>(h, p, z - p);
 						return true;
 					default:
 						z++;
@@ -367,8 +368,8 @@ namespace lni {
 			}
 		}
 
-		template <class Handler, bool Convert>
-		bool parse_value(Handler& h, bool& number, typename std::enable_if<!Convert>::type* = 0)
+		template <class Handler, bool Convert_>
+		bool parse_value(Handler& h, bool& number, typename std::enable_if<!Convert_>::type* = 0)
 		{
 			switch (*z) {
 			case '{':  return parse_table(h);
@@ -389,7 +390,7 @@ namespace lni {
 					case '\t':
 					case '\0':
 					case ' ':
-						parse_identifier<Handler, Convert>(h, p, z - p);
+						parse_identifier<Handler, Convert_>(h, p, z - p);
 						return true;
 					default:
 						z++;
@@ -400,8 +401,8 @@ namespace lni {
 			}
 		}
 
-		template <class Handler, bool Convert>
-		bool parse_value_ext(Handler& h, typename std::enable_if<Convert>::type* = 0)
+		template <class Handler, bool Convert_>
+		bool parse_value_ext(Handler& h, typename std::enable_if<Convert_>::type* = 0)
 		{
 			switch (*z) {
 			case '{':  return parse_table(h);
@@ -419,11 +420,11 @@ namespace lni {
 					case '\n':
 					case '\r':
 					case '\0':
-						parse_identifier<Handler, Convert>(h, p, z - p);
+						parse_identifier<Handler, Convert_>(h, p, z - p);
 						return true;
 					case '-':
 						if (z[1] == '-') {
-							parse_identifier<Handler, Convert>(h, p, z - p);
+							parse_identifier<Handler, Convert_>(h, p, z - p);
 							return true;
 						}
 					default:
@@ -435,8 +436,8 @@ namespace lni {
 			}
 		}
 
-		template <class Handler, bool Convert>
-		bool parse_value_ext(Handler& h, typename std::enable_if<!Convert>::type* = 0)
+		template <class Handler, bool Convert_>
+		bool parse_value_ext(Handler& h, typename std::enable_if<!Convert_>::type* = 0)
 		{
 			switch (*z) {
 			case '{':  return parse_table(h);
@@ -451,11 +452,11 @@ namespace lni {
 					case '\n':
 					case '\r':
 					case '\0':
-						parse_identifier<Handler, Convert>(h, p, z - p);
+						parse_identifier<Handler, Convert_>(h, p, z - p);
 						return true;
 					case '-':
 						if (z[1] == '-') {
-							parse_identifier<Handler, Convert>(h, p, z - p);
+							parse_identifier<Handler, Convert_>(h, p, z - p);
 							return true;
 						}
 					default:
@@ -493,8 +494,8 @@ namespace lni {
 			return false;
 		}
 
-		template <class Handler, bool Convert>
-		void parse_identifier(Handler& h, const char* str, size_t len, typename std::enable_if<Convert>::type* = 0)
+		template <class Handler, bool Convert_>
+		void parse_identifier(Handler& h, const char* str, size_t len, typename std::enable_if<Convert_>::type* = 0)
 		{
 			const char* beg = str;
 			const char* end = str + len - 1;
@@ -517,8 +518,8 @@ namespace lni {
 			h.accept_string(beg, end - beg + 1);
 		}
 
-		template <class Handler, bool Convert>
-		void parse_identifier(Handler& h, const char* str, size_t len, typename std::enable_if<!Convert>::type* = 0)
+		template <class Handler, bool Convert_>
+		void parse_identifier(Handler& h, const char* str, size_t len, typename std::enable_if<!Convert_>::type* = 0)
 		{
 			const char* beg = str;
 			const char* end = str + len - 1;
