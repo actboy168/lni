@@ -912,7 +912,7 @@ namespace lni {
 		}
 		void accept_section_inherited() {
 			lua_pushvalue(L, -1);
-			if (LUA_TTABLE != lua_rawget(L, t_main)) {
+			if (LUA_TTABLE != lua_gettable(L, t_main)) {
 				lua_pop(L, 1);
 				lua_pushvalue(L, -1);
 				lua_newtable(L);
