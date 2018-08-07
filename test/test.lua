@@ -323,6 +323,16 @@ TEST([==[
 }
 )
 
+TEST([==[
+[a]
+b = 0xFF
+]==]
+,
+{
+  a = { b = 255 }
+}
+)
+
 lni = (require 'lni').no_convert
 TEST(
 [==[

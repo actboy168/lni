@@ -17,7 +17,7 @@ namespace lni {
 		digit = 1,
 		alpha = 2,
 		underscode = 4,
-		hexdigit = digit & alpha,
+		hexdigit = digit | alpha,
 	};
 
 	static ctype ctypemap[256] = {
