@@ -1,3 +1,5 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/jf07wn469ghns1ie?svg=true)](https://ci.appveyor.com/project/actboy168/lni)
+
 # lni
 
 一种类似于ini的标记语言。语法上参考了ini和lua，目标是作为lua程序的配置语言。
