@@ -953,10 +953,7 @@ namespace lni {
 			if (!lua_setupvalue(L, -2, 1)) {
 				lua_pop(L, 1);
 			}
-			if (lua_pcall(L, 0, 0, 0)) {
-				lua_error(L);
-				return;
-			}
+			lua_call(L, 0, 0);
 		}
 	};
 }
