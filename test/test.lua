@@ -149,8 +149,10 @@ b = 2
 )
 
 TEST([==[
-[default] a = 1
-[A] b = 0
+<default>
+a = 1
+[A]
+b = 0
 ]==]
 ,
 {
@@ -159,7 +161,8 @@ TEST([==[
 )
 
 TEST([==[
-[default] a = 1
+<default>
+a = 1
 [A.B]
 b = 0
 ]==]
@@ -170,7 +173,8 @@ b = 0
 )
 
 TEST([==[
-[default] a = 1
+<default>
+a = 1
 [[A]] b = 0
 ]==]
 ,
@@ -180,7 +184,23 @@ TEST([==[
 )
 
 TEST([==[
+[root]
+a = 1
+[default]
+b = 2
 [enum]
+c = 3
+]==]
+,
+{
+  root = { a = 1 },
+  default = { b = 2 },
+  enum = { c = 3 },
+}
+)
+
+TEST([==[
+<enum>
 YES = 1
 NO = 0
 [A]
@@ -194,7 +214,7 @@ b = NO
 )
 
 TEST([==[
-[root]
+<root>
 A = 10
 ]==]
 ,

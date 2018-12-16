@@ -589,6 +589,8 @@ namespace lni {
 				switch (*z) {
 				case ':':
 				case '.':
+                case '<':
+                case '>':
 				case '[':
 				case ']':
 				case '\n':
@@ -621,65 +623,83 @@ namespace lni {
 				}
 				has_root = true;
 			}
-			if (h.accept_section(has_root)) {
-				bool top = true;
-				for (;;) {
-					if (consume(z, '.')) {
-						if (!parse_section_key(h)) {
-							return false;
-						}
-						h.accept_section_child();
-						top = false;
-						continue;
-					}
-					if (consume(z, '[')) {
-						if (!consume(z, ']')) {
-							return error(h, "']' expected near '%c'", *z);
-						}
-						h.accept_section_array();
-						top = false;
-						continue;
-					}
-					break;
-				}
-				if (mode == 1) {
-					h.accept_section_newarray();
-				}
-				parse_whitespace();
-				bool inherited = false;
-				if (consume(z, ':')) {
-					parse_whitespace();
-					if (!parse_section_key(h)) {
-						return false;
-					}
-					h.accept_section_inherited();
-					for (;;) {
-						if (consume(z, '.')) {
-							if (!parse_section_key(h)) {
-								return false;
-							}
-							h.accept_section_child();
-							continue;
-						}
-						if (consume(z, '[')) {
-							if (!consume(z, ']')) {
-								return error(h, "']' expected near '%c'", *z);
-							}
-							h.accept_section_array();
-							continue;
-						}
-						break;
-					}
-					inherited = true;
-				}
-				h.accept_section_end(inherited, top && mode == 0);
-			}
+            h.accept_section(has_root);
+            bool top = true;
+            for (;;) {
+                if (consume(z, '.')) {
+                    if (!parse_section_key(h)) {
+                        return false;
+                    }
+                    h.accept_section_child();
+                    top = false;
+                    continue;
+                }
+                if (consume(z, '[')) {
+                    if (!consume(z, ']')) {
+                        return error(h, "']' expected near '%c'", *z);
+                    }
+                    h.accept_section_array();
+                    top = false;
+                    continue;
+                }
+                break;
+            }
+            if (mode == 1) {
+                h.accept_section_newarray();
+            }
+            parse_whitespace();
+            bool inherited = false;
+            if (consume(z, ':')) {
+                parse_whitespace();
+                if (!parse_section_key(h)) {
+                    return false;
+                }
+                h.accept_section_inherited();
+                for (;;) {
+                    if (consume(z, '.')) {
+                        if (!parse_section_key(h)) {
+                            return false;
+                        }
+                        h.accept_section_child();
+                        continue;
+                    }
+                    if (consume(z, '[')) {
+                        if (!consume(z, ']')) {
+                            return error(h, "']' expected near '%c'", *z);
+                        }
+                        h.accept_section_array();
+                        continue;
+                    }
+                    break;
+                }
+                inherited = true;
+            }
+            h.accept_section_end(inherited, top && mode == 0);
+
 			parse_whitespace();
 			if (!consume(z, ']') || ((mode == 1) && (!consume(z, ']')))) {
 				return error(h, "']' expected near '%c'", *z);
 			}
 			return true;
 		}
+
+        template <class Handler>
+        bool parse_internal_section(Handler& h)
+        {
+            expect(z, '<');
+            parse_whitespace();
+            if (!parse_section_key(h)) {
+                return false;
+            }
+            if (!h.accept_internal_section()) {
+                return error(h, "unknown internal object");
+            }
+            parse_whitespace();
+            if (!consume(z, '>')) {
+                return error(h, "'>' expected near '%c'", *z);
+            }
+            return true;
+        }
 
 		template <class Handler>
 		bool parse_set(Handler& h)
@@ -702,14 +722,21 @@ namespace lni {
 		template <class Handler>
 		bool parse_object(Handler& h)
 		{
-			if (!equal(z, '[')) {
-				return error(h, "'[' expected near '%c'", *z);
-			}
-			if (!parse_section(h)) {
-				return false;
-			}
+            if (equal(z, '<')) {
+                if (!parse_internal_section(h)) {
+                    return false;
+                }
+            }
+            else {
+                if (!equal(z, '[')) {
+                    return error(h, "'[' expected near '%c'", *z);
+                }
+                if (!parse_section(h)) {
+                    return false;
+                }
+            }
 			parse_whitespace_and_comments_or_execute(h);
-			while (!equal(z, "[\0")) {
+            while (*z != '<' && *z != '[' && *z != '\0') {
 				if (!parse_set(h)) {
 					return false;
 				}
@@ -839,31 +866,36 @@ namespace lni {
 		void accept_root_end() {
 			lua_pop(L, 1);
 		}
-		bool accept_section(bool has_root) {
+        bool accept_internal_section() {
+            lua_remove(L, -2);
+            const char* name = luaL_checkstring(L, -1);
+            if (0 == strcmp(name, "default")) {
+                lua_pop(L, 1);
+                lua_pushvalue(L, t_default);
+                lua_pushvalue(L, -1);
+                return true;
+            }
+            if (0 == strcmp(name, "enum")) {
+                lua_pop(L, 1);
+                lua_pushvalue(L, t_enum);
+                lua_pushvalue(L, -1);
+                return true;
+            }
+            if (0 == strcmp(name, "root")) {
+                lua_pop(L, 1);
+                lua_pushvalue(L, t_main);
+                lua_pushvalue(L, -1);
+                return true;
+            }
+            return false;
+        }
+		void accept_section(bool has_root) {
 			if (!has_root) {
 				lua_pushvalue(L, -1);
-				return true;
+				return;
 			}
 			lua_remove(L, -2);
 			const char* name = luaL_checkstring(L, -1);
-			if (0 == strcmp(name, "default")) {
-				lua_pop(L, 1);
-				lua_pushvalue(L, t_default);
-				lua_pushvalue(L, -1);
-				return false;
-			}
-			if (0 == strcmp(name, "enum")) {
-				lua_pop(L, 1);
-				lua_pushvalue(L, t_enum);
-				lua_pushvalue(L, -1);
-				return false;
-			}
-			if (0 == strcmp(name, "root")) {
-				lua_pop(L, 1);
-				lua_pushvalue(L, t_main);
-				lua_pushvalue(L, -1);
-				return false;
-			}
 			lua_pushvalue(L, -1);
 			if (lua_gettable(L, t_main) != LUA_TTABLE) {
 				lua_pop(L, 1);
@@ -876,7 +908,6 @@ namespace lni {
 				lua_remove(L, -2);
 			}
 			lua_pushvalue(L, -1);
-			return true;
 		}
 		void accept_section_array() {
 			lua_Integer n = luaL_len(L, -3);
