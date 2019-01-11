@@ -99,12 +99,6 @@ namespace lni {
                 lua_pushvalue(L, -1);
                 return true;
             }
-            if (0 == strcmp(name, "root")) {
-                lua_pop(L, 1);
-                lua_pushvalue(L, t_root);
-                lua_pushvalue(L, -1);
-                return true;
-            }
             return false;
         }
         void accept_section_sub() {

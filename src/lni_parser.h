@@ -542,6 +542,22 @@ namespace lni {
         }
 
         template <class Handler>
+        bool parse_root_object(Handler& h) {
+            if (equal(z, "[<")) {
+                return true;
+            }
+            h.accept_section_sub();
+            while (*z != '<' && *z != '[' && *z != '\0') {
+                if (!parse_set(h)) {
+                    return false;
+                }
+                parse_whitespace_and_comments();
+            }
+            h.accept_object();
+            return true;
+        }
+
+        template <class Handler>
         bool parse_object(Handler& h) {
             if (equal(z, '[')) {
                 if (!parse_section(h)) {
@@ -571,6 +587,11 @@ namespace lni {
         bool parse(Handler& h) {
             h.accept_root();
             parse_whitespace_and_comments();
+            if (!equal(z, '\0')) {
+                if (!parse_root_object(h)) {
+                    return false;
+                }
+            }
             while (!equal(z, '\0')) {
                 if (!parse_object(h)) {
                     return false;
