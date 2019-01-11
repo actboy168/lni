@@ -93,7 +93,6 @@ namespace lni {
 		return false;
 	}
 
-	template <bool Convert>
 	struct lex {
 		const char* z;
 		int line = 1;
@@ -131,17 +130,6 @@ namespace lni {
 						return;
 					}
 				}
-			}
-		}
-
-		template <class Handler>
-		void parse_whitespace_and_comments_or_execute(Handler& h)
-		{
-			parse_whitespace();
-			for (; z[0] == '-' && z[1] == '-';) {
-				for (z += 2; !equal(z, "\n\r") && !equal(z, '\0'); z++)
-					;
-				parse_whitespace();
 			}
 		}
 
@@ -300,8 +288,7 @@ namespace lni {
 				if (consume(z, '}')) {
 					return true;
 				}
-				bool number = false;
-				if (!parse_value<Handler, Convert>(h, number)) {
+				if (!parse_value<Handler>(h)) {
 					return false;
 				}
 				parse_whitespace_and_comments();
@@ -310,10 +297,10 @@ namespace lni {
 				}
 				else {
 					parse_whitespace_and_comments();
-					if (!parse_value<Handler, Convert>(h, number)) {
+					if (!parse_value<Handler>(h)) {
 						return false;
 					}
-					h.accept_table_hash(Convert ? false : number);
+					h.accept_table_hash();
 					parse_whitespace_and_comments();
 				}
 				if (consume(z, '}')) {
@@ -326,8 +313,8 @@ namespace lni {
 			return true;
 		}
 
-		template <class Handler, bool Convert_>
-		bool parse_value(Handler& h, bool& number, typename std::enable_if<Convert_>::type* = 0)
+		template <class Handler>
+		bool parse_value(Handler& h)
 		{
 			switch (*z) {
 			case '{':  return parse_table(h);
@@ -350,7 +337,7 @@ namespace lni {
 					case '\t':
 					case '\0':
 					case ' ':
-						parse_identifier<Handler, Convert_>(h, p, z - p);
+						parse_identifier<Handler>(h, p, z - p);
 						return true;
 					default:
 						z++;
@@ -361,41 +348,8 @@ namespace lni {
 			}
 		}
 
-		template <class Handler, bool Convert_>
-		bool parse_value(Handler& h, bool& number, typename std::enable_if<!Convert_>::type* = 0)
-		{
-			switch (*z) {
-			case '{':  return parse_table(h);
-			case '[':  return parse_long_string(h);
-			case '"': case '\'': return parse_string(h, *z);
-			case '\0':
-				return error(h, "unexpected symbol near <eof>");
-			default: {
-				number = true;
-				const char* p = z;
-				for (;;) {
-					switch (*z) {
-					case '=':
-					case ',':
-					case '}':
-					case '\n':
-					case '\r':
-					case '\t':
-					case '\0':
-					case ' ':
-						parse_identifier<Handler, Convert_>(h, p, z - p);
-						return true;
-					default:
-						z++;
-						break;
-					}
-				}
-			}
-			}
-		}
-
-		template <class Handler, bool Convert_>
-		bool parse_value_ext(Handler& h, typename std::enable_if<Convert_>::type* = 0)
+		template <class Handler>
+		bool parse_value_ext(Handler& h)
 		{
 			switch (*z) {
 			case '{':  return parse_table(h);
@@ -413,43 +367,11 @@ namespace lni {
 					case '\n':
 					case '\r':
 					case '\0':
-						parse_identifier<Handler, Convert_>(h, p, z - p);
+						parse_identifier<Handler>(h, p, z - p);
 						return true;
 					case '-':
 						if (z[1] == '-') {
-							parse_identifier<Handler, Convert_>(h, p, z - p);
-							return true;
-						}
-					default:
-						z++;
-						break;
-					}
-				}
-			}
-			}
-		}
-
-		template <class Handler, bool Convert_>
-		bool parse_value_ext(Handler& h, typename std::enable_if<!Convert_>::type* = 0)
-		{
-			switch (*z) {
-			case '{':  return parse_table(h);
-			case '[':  return parse_long_string(h);
-			case '"': case '\'': return parse_string(h, *z);
-			case '\0':
-				return error(h, "unexpected symbol near <eof>");
-			default: {
-				const char* p = z;
-				for (;;) {
-					switch (*z) {
-					case '\n':
-					case '\r':
-					case '\0':
-						parse_identifier<Handler, Convert_>(h, p, z - p);
-						return true;
-					case '-':
-						if (z[1] == '-') {
-							parse_identifier<Handler, Convert_>(h, p, z - p);
+							parse_identifier<Handler>(h, p, z - p);
 							return true;
 						}
 					default:
@@ -487,8 +409,8 @@ namespace lni {
 			return false;
 		}
 
-		template <class Handler, bool Convert_>
-		void parse_identifier(Handler& h, const char* str, size_t len, typename std::enable_if<Convert_>::type* = 0)
+		template <class Handler>
+		void parse_identifier(Handler& h, const char* str, size_t len)
 		{
 			const char* beg = str;
 			const char* end = str + len - 1;
@@ -505,24 +427,6 @@ namespace lni {
 			if (beg < end) {
 				if (parse_keyword(h, beg, end - beg + 1))
 					return;
-			}
-			h.accept_string(beg, end - beg + 1);
-		}
-
-		template <class Handler, bool Convert_>
-		void parse_identifier(Handler& h, const char* str, size_t len, typename std::enable_if<!Convert_>::type* = 0)
-		{
-			const char* beg = str;
-			const char* end = str + len - 1;
-			for (; beg <= end; ++beg) {
-				if (!equal(beg, " \t")) {
-					break;
-				}
-			}
-			for (; beg <= end; --end) {
-				if (!equal(end, " \t")) {
-					break;
-				}
 			}
 			h.accept_string(beg, end - beg + 1);
 		}
@@ -677,7 +581,7 @@ namespace lni {
 				return error(h, "'=' expected near '%c'", *z);
 			}
 			parse_whitespace_and_comments();
-			if (!parse_value_ext<Handler, Convert>(h)) {
+			if (!parse_value_ext<Handler>(h)) {
 				return false;
 			}
 			h.accept_set();
@@ -700,12 +604,12 @@ namespace lni {
                     return false;
                 }
             }
-			parse_whitespace_and_comments_or_execute(h);
+			parse_whitespace_and_comments();
             while (*z != '<' && *z != '[' && *z != '\0') {
 				if (!parse_set(h)) {
 					return false;
 				}
-				parse_whitespace_and_comments_or_execute(h);
+				parse_whitespace_and_comments();
 			}
 			h.accept_object();
 			return true;
@@ -715,12 +619,12 @@ namespace lni {
 		bool parse(Handler& h)
 		{
 			h.accept_root();
-			parse_whitespace_and_comments_or_execute(h);
+			parse_whitespace_and_comments();
 			while (!equal(z, '\0')) {
 				if (!parse_object(h)) {
 					return false;
 				}
-				parse_whitespace_and_comments_or_execute(h);
+				parse_whitespace_and_comments();
 			}
 			h.accept_root_end();
 			return true;
@@ -790,16 +694,7 @@ namespace lni {
 			lua_newtable(L);
 			ary = 1;
 		}
-		void accept_table_hash(bool number) {
-			if (number) {
-				size_t len = 0;
-				const char* str = luaL_checklstring(L, -2, &len);
-				if (str[0] == '-' || is_digit(str[0])) {
-					if (lua_stringtonumber(L, str) == len + 1) {
-						lua_replace(L, -3);
-					}
-				}
-			}
+		void accept_table_hash() {
 			lua_rawset(L, -3);
 		}
 		void accept_table_array(int& ary) {

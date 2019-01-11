@@ -1,4 +1,4 @@
-local lni = (require 'lni').classics
+local lni = require 'lni'
 local print_r = require 'print_r'
 
 function LOAD(filename)
@@ -297,48 +297,6 @@ b = 0xFF
 ,
 {
   a = { b = 255 }
-}
-)
-
-lni = (require 'lni').no_convert
-TEST(
-[==[
-[ABC]
-a = 'Hello'
-b = 1.0
-c = {'1', '2', '3'}
-'d' = {
-  x = 2,
-  y = 4,
-  5 = 5,
-}
-e = true
-f = nil
-10 = [[
-   | H
-   | e
-   | l
-   | l
-   | o
-]]
-]==]
-,
-{
-ABC = {
-a = 'Hello',
-b = '1.0',
-c = {'1', '2', '3'},
-d = { x = '2', y = '4', [5] = '5' },
-e = 'true',
-f = 'nil',
-[10] = [[
-   | H
-   | e
-   | l
-   | l
-   | o
-]]
-  }
 }
 )
 
