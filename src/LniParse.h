@@ -139,15 +139,8 @@ namespace lni {
 		{
 			parse_whitespace();
 			for (; z[0] == '-' && z[1] == '-';) {
-				if (z[2] == '!') {
-					z += 3;
-					const char* start = z;
-					for (; !equal(z, "\n\r") && !equal(z, '\0'); z++);
-					h.accept_execute(start, z);
-				}
-				else {
-					for (z += 2; !equal(z, "\n\r") && !equal(z, '\0'); z++);
-				}
+				for (z += 2; !equal(z, "\n\r") && !equal(z, '\0'); z++)
+					;
 				parse_whitespace();
 			}
 		}
@@ -974,17 +967,6 @@ namespace lni {
 			}
 			lua_pop(L, 1);
 			return false;
-		}
-		void accept_execute(const char* start, const char* end) {
-			if (luaL_loadbuffer(L, start, end - start, "=(lni-exec)")) {
-				lua_error(L);
-				return;
-			}
-			lua_pushvalue(L, t_env);
-			if (!lua_setupvalue(L, -2, 1)) {
-				lua_pop(L, 1);
-			}
-			lua_call(L, 0, 0);
 		}
 	};
 }
