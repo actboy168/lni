@@ -505,8 +505,6 @@ namespace lni {
 			if (beg < end) {
 				if (parse_keyword(h, beg, end - beg + 1))
 					return;
-				if (h.accept_identifier(beg, end - beg + 1))
-					return;
 			}
 			h.accept_string(beg, end - beg + 1);
 		}
@@ -525,10 +523,6 @@ namespace lni {
 				if (!equal(end, " \t")) {
 					break;
 				}
-			}
-			if (beg < end) {
-				if (h.accept_identifier(beg, end - beg + 1))
-					return;
 			}
 			h.accept_string(beg, end - beg + 1);
 		}
@@ -762,7 +756,6 @@ namespace lni {
 		lua_State* L;
 		int t_main = 0;
 		int t_default = 0;
-		int t_enum = 0;
 		int t_env = 0;
 
 		handler(lua_State* L)
@@ -827,9 +820,8 @@ namespace lni {
 			// env
 			// main
 			// default
-			// enum
-			t_enum = lua_gettop(L);
-			t_default = t_enum - 1;
+			int dummy = lua_gettop(L);
+			t_default = dummy - 1;
 			t_main = t_default - 1;
 			t_env = t_main - 1;
 			lua_pushvalue(L, t_main);
@@ -843,12 +835,6 @@ namespace lni {
             if (0 == strcmp(name, "default")) {
                 lua_pop(L, 1);
                 lua_pushvalue(L, t_default);
-                lua_pushvalue(L, -1);
-                return true;
-            }
-            if (0 == strcmp(name, "enum")) {
-                lua_pop(L, 1);
-                lua_pushvalue(L, t_enum);
                 lua_pushvalue(L, -1);
                 return true;
             }
@@ -920,14 +906,6 @@ namespace lni {
 					lua_copytable(L, t_default, -1);
 				}
 			}
-		}
-		bool accept_identifier(const char* str, size_t len) {
-			lua_pushlstring(L, str, len);
-			if (LUA_TNIL != lua_rawget(L, t_enum)) {
-				return true;
-			}
-			lua_pop(L, 1);
-			return false;
 		}
 	};
 }

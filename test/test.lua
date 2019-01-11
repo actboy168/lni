@@ -152,28 +152,11 @@ TEST([==[
 a = 1
 [default]
 b = 2
-[enum]
-c = 3
 ]==]
 ,
 {
   root = { a = 1 },
   default = { b = 2 },
-  enum = { c = 3 },
-}
-)
-
-TEST([==[
-<enum>
-YES = 1
-NO = 0
-[A]
-a = YES
-b = NO
-]==]
-,
-{
- A = { a = 1, b = 0 }
 }
 )
 
