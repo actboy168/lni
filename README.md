@@ -4,6 +4,14 @@
 
 一种类似于ini的标记语言。语法上参考了ini和lua，目标是作为lua程序的配置语言。
 
+
+## build && test
+
+```
+3rd\luamake\luamake.exe
+build\bin\lua.exe -e "package.path=[[test\?.lua]]"  test\test.lua
+```
+
 ## 语法
 
 ```lua

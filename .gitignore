@@ -1,7 +1,1 @@
-build/
-bin/
-*.suo
-*.user
-*.sdf
-*.opensdf
-.vs/
+/build/

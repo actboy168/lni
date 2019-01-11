@@ -1,5 +1,3 @@
-package.cpath = package.cpath .. [[;.\..\bin\Debug\?.dll]]
-
 local lni = (require 'lni').classics
 local print_r = require 'print_r'
 
