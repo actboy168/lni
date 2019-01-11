@@ -623,14 +623,6 @@ namespace lni {
                     top = false;
                     continue;
                 }
-                if (consume(z, '[')) {
-                    if (!consume(z, ']')) {
-                        return error(h, "']' expected near '%c'", *z);
-                    }
-                    h.accept_section_array();
-                    top = false;
-                    continue;
-                }
                 break;
             }
             parse_whitespace();
@@ -647,13 +639,6 @@ namespace lni {
                             return false;
                         }
                         h.accept_section_child();
-                        continue;
-                    }
-                    if (consume(z, '[')) {
-                        if (!consume(z, ']')) {
-                            return error(h, "']' expected near '%c'", *z);
-                        }
-                        h.accept_section_array();
                         continue;
                     }
                     break;
@@ -894,17 +879,6 @@ namespace lni {
 				lua_remove(L, -2);
 			}
 			lua_pushvalue(L, -1);
-		}
-		void accept_section_array() {
-			lua_Integer n = luaL_len(L, -3);
-			if (n == 0) n = 1;
-			if (LUA_TTABLE != lua_geti(L, -1, n)) {
-				lua_pop(L, 1);
-				lua_newtable(L);
-				lua_pushvalue(L, -1);
-				lua_seti(L, -3, n);
-			}
-			lua_remove(L, -2);
 		}
 		void accept_section_child()
 		{
