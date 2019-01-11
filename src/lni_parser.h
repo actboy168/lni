@@ -50,14 +50,6 @@ namespace lni {
         return (uint8_t)ctypemap[(unsigned char)c] & (uint8_t)ctype::digit;
     }
 
-    inline bool is_alpha_or_underscode(char c) {
-        return !!((int)ctypemap[(unsigned char)c] & ((int)ctype::alpha | (int)ctype::underscode));
-    }
-
-    inline bool is_alnum_or_underscode(char c) {
-        return !!((int)ctypemap[(unsigned char)c] & ((int)ctype::alpha | (int)ctype::digit | (int)ctype::underscode));
-    }
-
     inline bool equal(const char* p, const char c) {
         return *p == c;
     }
@@ -216,8 +208,7 @@ namespace lni {
             if (!consume(z, '[')) {
                 return error(h, "invalid long string delimiter near '%s'", std::string(p, z - p).c_str());
             }
-            if (equal(z, "\n\r"))
-            {
+            if (equal(z, "\n\r")) {
                 incline();
             }
             p = z;
@@ -235,8 +226,8 @@ namespace lni {
                         h.accept_string(p, z - p - 2 - sep);
                         return true;
                     }
+                    break;
                 }
-                          break;
                 case '\n':
                 case '\r':
                     incline();
@@ -552,18 +543,18 @@ namespace lni {
 
         template <class Handler>
         bool parse_object(Handler& h) {
-            if (equal(z, '<')) {
+            if (equal(z, '[')) {
+                if (!parse_section(h)) {
+                    return false;
+                }
+            }
+            else if (equal(z, '<')) {
                 if (!parse_internal_section(h)) {
                     return false;
                 }
             }
             else {
-                if (!equal(z, '[')) {
-                    return error(h, "'[' expected near '%c'", *z);
-                }
-                if (!parse_section(h)) {
-                    return false;
-                }
+                return error(h, "'[' expected near '%c'", *z);
             }
             parse_whitespace_and_comments();
             while (*z != '<' && *z != '[' && *z != '\0') {
