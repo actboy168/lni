@@ -113,7 +113,6 @@ namespace lni {
 				return;
 			}
 			lua_remove(L, -2);
-			const char* name = luaL_checkstring(L, -1);
 			lua_pushvalue(L, -1);
 			if (lua_gettable(L, t_root) != LUA_TTABLE) {
 				lua_pop(L, 1);
