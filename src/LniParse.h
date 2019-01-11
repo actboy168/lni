@@ -660,7 +660,6 @@ namespace lni {
 		lua_State* L;
 		int t_main = 0;
 		int t_default = 0;
-		int t_env = 0;
 
 		handler(lua_State* L)
 			: L(L)
@@ -715,10 +714,8 @@ namespace lni {
 			// env
 			// main
 			// default
-			int dummy = lua_gettop(L);
-			t_default = dummy - 1;
+			t_default = lua_gettop(L);
 			t_main = t_default - 1;
-			t_env = t_main - 1;
 			lua_pushvalue(L, t_main);
 		}
 		void accept_root_end() {
@@ -761,8 +758,7 @@ namespace lni {
 			}
 			lua_pushvalue(L, -1);
 		}
-		void accept_section_child()
-		{
+		void accept_section_child() {
 			lua_pushvalue(L, -1);
 			if (lua_gettable(L, -3) != LUA_TTABLE) {
 				lua_pop(L, 1);

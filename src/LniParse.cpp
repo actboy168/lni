@@ -34,7 +34,6 @@ namespace lni
 			lua_newtable(L); lua_rawseti(L, -2, 2); // default
 			lua_rawgeti(L, 3, 1);
 			lua_rawgeti(L, 3, 2);
-			lua_pushnil(L);
 			break;
 		default:
 			lua_settop(L, 3);
@@ -51,8 +50,6 @@ namespace lni
 			// default
 			copy(L, 3, 2, 3, true);
 			lua_rawgeti(L, 3, 2);
-			// dummy
-			lua_pushnil(L);
 			clean = true;
 			break;
 		}
@@ -64,6 +61,6 @@ namespace lni
 		if (!ok) {
 			return luaL_error(L, "\n%s:%d: %s", file, (int)lua_tointeger(L, -2), lua_tostring(L, -1));
 		}
-		return 3;
+		return 2;
 	}
 }
