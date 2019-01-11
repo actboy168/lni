@@ -26,7 +26,7 @@ local function TEST(script, t)
 	local ok, e = pcall(EQUAL, r, t)
 	if not ok then
 		print(script)
-		print('--------------------------')
+    print('--------------------------')
 		print_r(r)
 		print('--------------------------')
 		print_r(t)
@@ -44,71 +44,6 @@ local function TEST(script, t)
 		error(name)
 	end
 end
-
-TEST(
-[==[
-[ABC]
-a = 'Hello'
-b = 1.0
-c = {'1', '2', '3'}
-'d' = {
-  x = 2,
-  y = 4,
-  5 = 5,
-}
-e = true
-f = nil
-10 = [[
-   | H
-   | e
-   | l
-   | l
-   | o
-]]
-]==]
-,
-{
-ABC = {
-a = 'Hello',
-b = 1.0,
-c = {'1', '2', '3'},
-d = { x = 2, y = 4, [5] = 5 },
-e = true,
-[10] = [[
-   | H
-   | e
-   | l
-   | l
-   | o
-]]
-  }
-}
-)
-
-TEST([==[
-[A]
-C = 2
-[A.B]
-a = 1
-]==]
-,
-{
- A = { B = {a = 1}, C = 2 }
-}
-)
-
-TEST([==[
-[A.B]
-a = 1
-[A]
-C = 2
-]==]
-,
-{
- A = { C = 2 }
-}
-)
-
 
 TEST([==[
 [B]
@@ -297,6 +232,46 @@ b = 0xFF
 ,
 {
   a = { b = 255 }
+}
+)
+
+TEST(
+[==[
+[ABC]
+a = 'Hello'
+b = 1.0
+c = {'1', '2', '3'}
+'d' = {
+  x = 2,
+  y = 4,
+  5 = 5,
+}
+e = true
+f = nil
+10 = [[
+   | H
+   | e
+   | l
+   | l
+   | o
+]]
+]==]
+,
+{
+ABC = {
+a = 'Hello',
+b = 1.0,
+c = {'1', '2', '3'},
+d = { x = 2, y = 4, [5] = 5 },
+e = true,
+[10] = [[
+   | H
+   | e
+   | l
+   | l
+   | o
+]]
+  }
 }
 )
 

@@ -14,17 +14,6 @@ namespace lni {
 		}
 	}
 
-	inline void lua_cleartable(lua_State* L, int t) {
-		t = lua_absindex(L, t);
-		lua_pushnil(L);
-		while (lua_next(L, t)) {
-			lua_pop(L, 1);
-			lua_pushvalue(L, -1);
-			lua_pushnil(L);
-			lua_rawset(L, t);
-		}
-	}
-
 	struct handler {
 		lua_State* L;
 		int t_root = 0;
@@ -113,17 +102,12 @@ namespace lni {
 				return;
 			}
 			lua_remove(L, -2);
+			
+			lua_newtable(L);
 			lua_pushvalue(L, -1);
-			if (lua_gettable(L, t_root) != LUA_TTABLE) {
-				lua_pop(L, 1);
-				lua_newtable(L);
-				lua_pushvalue(L, -1);
-				lua_insert(L, -3);
-				lua_settable(L, t_root);
-			}
-			else {
-				lua_remove(L, -2);
-			}
+			lua_insert(L, -3);
+			lua_settable(L, t_root);
+				
 			lua_pushvalue(L, -1);
 		}
 		void accept_section_child() {
@@ -154,16 +138,11 @@ namespace lni {
 		}
 		void accept_section_end(bool inherited, bool top) {
 			if (inherited) {
-				lua_cleartable(L, -2);
 				lua_copytable(L, -1, -2);
 				lua_pop(L, 1);
-				return;
 			}
-			else {
-				lua_cleartable(L, -1);
-				if (top) {
-					lua_copytable(L, t_default, -1);
-				}
+			else if (top) {
+				lua_copytable(L, t_default, -1);
 			}
 		}
 	};
