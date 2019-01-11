@@ -603,11 +603,7 @@ namespace lni {
 		template <class Handler>
 		bool parse_section(Handler& h)
 		{
-			int mode = 0;
 			expect(z, '[');
-			if (consume(z, '[')) {
-				mode = 1;
-			}
 			parse_whitespace();
 			bool has_root = false;
 			if (!equal(z, '.')) {
@@ -637,9 +633,6 @@ namespace lni {
                 }
                 break;
             }
-            if (mode == 1) {
-                h.accept_section_newarray();
-            }
             parse_whitespace();
             bool inherited = false;
             if (consume(z, ':')) {
@@ -667,10 +660,10 @@ namespace lni {
                 }
                 inherited = true;
             }
-            h.accept_section_end(inherited, top && mode == 0);
+            h.accept_section_end(inherited, top);
 
 			parse_whitespace();
-			if (!consume(z, ']') || ((mode == 1) && (!consume(z, ']')))) {
+			if (!consume(z, ']')) {
 				return error(h, "']' expected near '%c'", *z);
 			}
 			return true;
@@ -911,12 +904,6 @@ namespace lni {
 				lua_pushvalue(L, -1);
 				lua_seti(L, -3, n);
 			}
-			lua_remove(L, -2);
-		}
-		void accept_section_newarray() {
-			lua_newtable(L);
-			lua_pushvalue(L, -1);
-			lua_seti(L, -3, luaL_len(L, -3) + 1);
 			lua_remove(L, -2);
 		}
 		void accept_section_child()
