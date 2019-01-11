@@ -1,6 +1,5 @@
 local lm = require 'luamake'
 
-
 lm.rootdir = '3rd/lua53/src'
 lm:shared_library 'lua53' {
    sources = {
