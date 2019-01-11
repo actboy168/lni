@@ -27,7 +27,7 @@ namespace lni {
 			lua_pushstring(L, file);
 		case 2:
 			lua_newtable(L); // env
-			lua_newtable(L); lua_rawseti(L, -2, 1); // main
+			lua_newtable(L); lua_rawseti(L, -2, 1); // root
 			lua_newtable(L); lua_rawseti(L, -2, 2); // default
 			lua_rawgeti(L, 3, 1);
 			lua_rawgeti(L, 3, 2);
@@ -37,7 +37,7 @@ namespace lni {
 		case 3:
 			// env
 			luaL_checktype(L, 3, LUA_TTABLE);
-			// main
+			// root
 			if (lua_rawgeti(L, 3, 1) != LUA_TTABLE) {
 				lua_pop(L, 1);
 				lua_newtable(L);

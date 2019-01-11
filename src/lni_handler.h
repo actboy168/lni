@@ -27,7 +27,7 @@ namespace lni {
 
 	struct handler {
 		lua_State* L;
-		int t_main = 0;
+		int t_root = 0;
 		int t_default = 0;
 
 		handler(lua_State* L)
@@ -81,11 +81,11 @@ namespace lni {
 		}
 		void accept_root() {
 			// env
-			// main
+			// root
 			// default
 			t_default = lua_gettop(L);
-			t_main = t_default - 1;
-			lua_pushvalue(L, t_main);
+			t_root = t_default - 1;
+			lua_pushvalue(L, t_root);
 		}
 		void accept_root_end() {
 			lua_pop(L, 1);
@@ -101,7 +101,7 @@ namespace lni {
             }
             if (0 == strcmp(name, "root")) {
                 lua_pop(L, 1);
-                lua_pushvalue(L, t_main);
+                lua_pushvalue(L, t_root);
                 lua_pushvalue(L, -1);
                 return true;
             }
@@ -115,12 +115,12 @@ namespace lni {
 			lua_remove(L, -2);
 			const char* name = luaL_checkstring(L, -1);
 			lua_pushvalue(L, -1);
-			if (lua_gettable(L, t_main) != LUA_TTABLE) {
+			if (lua_gettable(L, t_root) != LUA_TTABLE) {
 				lua_pop(L, 1);
 				lua_newtable(L);
 				lua_pushvalue(L, -1);
 				lua_insert(L, -3);
-				lua_settable(L, t_main);
+				lua_settable(L, t_root);
 			}
 			else {
 				lua_remove(L, -2);
@@ -143,13 +143,13 @@ namespace lni {
 		}
 		void accept_section_inherited() {
 			lua_pushvalue(L, -1);
-			if (LUA_TTABLE != lua_gettable(L, t_main)) {
+			if (LUA_TTABLE != lua_gettable(L, t_root)) {
 				lua_pop(L, 1);
 				lua_pushvalue(L, -1);
 				lua_newtable(L);
 				lua_pushvalue(L, -1);
 				lua_insert(L, -3);
-				lua_settable(L, t_main);
+				lua_settable(L, t_root);
 			}
 			lua_remove(L, -2);
 		}
