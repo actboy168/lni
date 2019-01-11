@@ -107,11 +107,10 @@ namespace lni {
             }
             return false;
         }
-		void accept_section(bool has_root) {
-			if (!has_root) {
-				lua_pushvalue(L, -1);
-				return;
-			}
+		void accept_section_sub() {
+			lua_pushvalue(L, -1);
+		}
+		void accept_section() {
 			lua_remove(L, -2);
 			lua_pushvalue(L, -1);
 			if (lua_gettable(L, t_root) != LUA_TTABLE) {

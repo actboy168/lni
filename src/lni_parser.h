@@ -501,14 +501,15 @@ namespace lni {
 		{
 			expect(z, '[');
 			parse_whitespace();
-			bool has_root = false;
-			if (!equal(z, '.')) {
+			if (equal(z, '.')) {
+            	h.accept_section_sub();
+			}
+			else {
 				if (!parse_section_key(h)) {
 					return false;
 				}
-				has_root = true;
+            	h.accept_section();
 			}
-            h.accept_section(has_root);
             bool top = true;
             for (;;) {
                 if (consume(z, '.')) {
