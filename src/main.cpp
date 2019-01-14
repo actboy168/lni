@@ -12,7 +12,7 @@ namespace lni {
                 lua_rawseti(L, t, from);
             }
             lua_newtable(L);
-            lua_copytable(L, -2, -1);
+            copytable(L, -2, -1);
             lua_rawseti(L, t, from);
         }
         lua_rawseti(L, t, to);
