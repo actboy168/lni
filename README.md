@@ -9,7 +9,6 @@
 
 ```
 3rd\luamake\luamake.exe
-build\bin\lua.exe -e "package.path=[[test\?.lua]]"  test\test.lua
 ```
 
 ## 语法

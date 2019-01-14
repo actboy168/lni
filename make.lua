@@ -20,3 +20,8 @@ lm:lua_library 'lni' {
    luaversion = 'lua53',
    sources = "*.cpp"
 }
+
+lm:build "test" {
+   "$luamake", "lua", "test.lua",
+   deps = { "lni", "lua" }
+}
