@@ -1,6 +1,8 @@
 #pragma once
 
 #include <lua.hpp>
+#include <stack>
+#include <limits>
 
 namespace lni {
     inline void lua_copytable(lua_State* L, int src, int dst) {
@@ -29,6 +31,7 @@ namespace lni {
         lua_State* L;
         int t_root = 0;
         int t_default = 0;
+        std::stack<unsigned int> levels;
 
         handler(lua_State* L)
             : L(L)
@@ -86,17 +89,21 @@ namespace lni {
             t_default = lua_gettop(L);
             t_root = t_default - 1;
             lua_pushvalue(L, t_root);
+            levels.push(0);
         }
         void accept_root_end() {
-            lua_pop(L, 1);
+            for (;!levels.empty();) {
+                lua_pop(L, 1);
+                levels.pop();
+            }
         }
         bool accept_internal_section() {
-            lua_remove(L, -2);
             const char* name = luaL_checkstring(L, -1);
             if (0 == strcmp(name, "default")) {
                 lua_pop(L, 1);
                 lua_pushvalue(L, t_default);
                 lua_pushvalue(L, -1);
+                levels.push(std::numeric_limits<unsigned int>::max());
                 return true;
             }
             return false;
@@ -104,10 +111,26 @@ namespace lni {
         void accept_section_sub() {
             lua_pushvalue(L, -1);
         }
-        void accept_section() {
-            lua_remove(L, -2);
-            accept_section_inherited();
-            accept_section_sub();
+        bool accept_section(unsigned int level, unsigned int& last) {
+            for (;;) {
+                if (level <= levels.top()) {
+                    lua_remove(L, -2);
+                    levels.pop();
+                    continue;
+                }
+                if (level > levels.top() + 1) {
+                    last = levels.top();
+                    return false;
+                }
+                levels.push(level);
+                break;
+            }
+            lua_newtable(L);
+            lua_pushvalue(L, -1);
+            lua_insert(L, -3);
+            lua_settable(L, -4);
+            lua_pushvalue(L, -1);
+            return true;
         }
         void accept_section_child() {
             lua_pushvalue(L, -1);

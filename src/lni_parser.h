@@ -457,26 +457,18 @@ namespace lni {
         bool parse_section(Handler& h) {
             expect(z, '[');
             parse_whitespace();
-            if (equal(z, '.')) {
-                h.accept_section_sub();
-            }
-            else {
-                if (!parse_section_key(h)) {
-                    return false;
+            unsigned int level = 1;
+            for (;;level++) {
+                if (!consume(z, '.')) {
+                    break;
                 }
-                h.accept_section();
             }
-            bool top = true;
-            for (;;) {
-                if (consume(z, '.')) {
-                    if (!parse_section_key(h)) {
-                        return false;
-                    }
-                    h.accept_section_child();
-                    top = false;
-                    continue;
-                }
-                break;
+            if (!parse_section_key(h)) {
+                return false;
+            }
+            unsigned int last;
+            if (!h.accept_section(level, last)) {
+                return error(h, "The previous section is Lv.%d, but current is Lv.%d.", last, level);
             }
             parse_whitespace();
             bool inherited = false;
@@ -498,7 +490,7 @@ namespace lni {
                 }
                 inherited = true;
             }
-            h.accept_section_end(inherited, top);
+            h.accept_section_end(inherited, level==1);
 
             parse_whitespace();
             if (!consume(z, ']')) {
