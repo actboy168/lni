@@ -8,7 +8,7 @@
 ## build && test
 
 ```
-3rd\luamake\luamake.exe
+luamake
 ```
 
 ## 语法
