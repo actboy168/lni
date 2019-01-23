@@ -588,7 +588,6 @@ namespace lni {
                 if (!parse_object(h)) {
                     return false;
                 }
-                parse_whitespace_and_comments();
             }
             h.accept_root_end();
             return true;
