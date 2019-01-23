@@ -108,8 +108,17 @@ namespace lni {
 
         void parse_whitespace_and_comments() {
             parse_whitespace();
-            for (; z[0] == '-' && z[1] == '-';) {
-                for (z += 2; !equal(z, "\n\r") && !equal(z, '\0'); z++);
+            while (z[0] == '-' && z[1] == '-') {
+                for (z += 2; *z != '\r' && *z != '\n' && *z != '\0'; z++);
+                parse_whitespace();
+            }
+        }
+
+        template <class Handler>
+        void parse_split(Handler& h) {
+            while (z[0] == '`' && z[1] == '`' && z[2] == '`' && z[3] == '`') {
+                h.accept_split();
+                for (z += 4; *z != '\r' && *z != '\n' && *z != '\0'; z++);
                 parse_whitespace();
             }
         }
@@ -456,6 +465,7 @@ namespace lni {
         template <class Handler>
         bool parse_section(Handler& h) {
             expect(z, '[');
+            h.accept_section_begin();
             parse_whitespace();
             unsigned int level = 1;
             for (;;level++) {
@@ -518,6 +528,7 @@ namespace lni {
 
         template <class Handler>
         bool parse_set(Handler& h) {
+            parse_split(h);
             if (!parse_key(h)) {
                 return false;
             }
@@ -538,6 +549,7 @@ namespace lni {
             if (equal(z, "[<")) {
                 return true;
             }
+            h.accept_section_begin();
             h.accept_section_sub();
             while (*z != '<' && *z != '[' && *z != '\0') {
                 if (!parse_set(h)) {

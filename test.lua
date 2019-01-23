@@ -7,8 +7,8 @@ local CWD = fs.current_path()
 
 local lua, cpath
 if platform.OS == "Windows" then
-    lua = CWD / "build" / "bin" / "lua.exe"
-    cpath = "build/bin/?.dll"
+    lua = CWD / "build" / "msvc" / "bin" / "lua.exe"
+    cpath = "build/msvc/bin/?.dll"
 else
     lua = CWD / "build" / "bin" / "lua"
     cpath = "build/bin/?.so"

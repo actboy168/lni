@@ -20,6 +20,7 @@ namespace lni {
         lua_State* L;
         int t_root = 0;
         int t_default = 0;
+        bool split = false;
         std::stack<unsigned int> levels;
 
         handler(lua_State* L)
@@ -97,6 +98,12 @@ namespace lni {
             }
             return false;
         }
+        void accept_section_begin() {
+            if (split) {
+                lua_pop(L, 1);
+                split = false;
+            }
+        }
         void accept_section_sub() {
             lua_pushvalue(L, -1);
         }
@@ -156,6 +163,16 @@ namespace lni {
             else if (top) {
                 copytable(L, t_default, -1);
             }
+        }
+        void accept_split() {
+            if (split) {
+                lua_pop(L, 1);
+            }
+            split = true;
+            lua_Integer n = luaL_len(L, -1);
+            lua_newtable(L);
+            lua_pushvalue(L, -1);
+            lua_seti(L, -3, n + 1);
         }
     };
 }
