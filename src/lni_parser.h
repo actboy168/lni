@@ -466,7 +466,7 @@ namespace lni {
         bool parse_section(Handler& h) {
             expect(z, '[');
             bool split = consume(z, '[');
-            h.accept_section_begin();
+            h.accept_split_end();
             parse_whitespace();
             unsigned int level = 1;
             for (;;level++) {
@@ -553,7 +553,7 @@ namespace lni {
             if (equal(z, "[<")) {
                 return true;
             }
-            h.accept_section_begin();
+            h.accept_split_end();
             h.accept_section_sub();
             while (*z != '<' && *z != '[' && *z != '\0') {
                 if (!parse_set(h)) {

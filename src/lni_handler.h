@@ -82,6 +82,7 @@ namespace lni {
             levels.push(0);
         }
         void accept_root_end() {
+            accept_split_end();
             for (;!levels.empty();) {
                 lua_pop(L, 1);
                 levels.pop();
@@ -98,7 +99,7 @@ namespace lni {
             }
             return false;
         }
-        void accept_section_begin() {
+        void accept_split_end() {
             if (split) {
                 lua_pop(L, 1);
                 split = false;
