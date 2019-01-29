@@ -465,6 +465,7 @@ namespace lni {
         template <class Handler>
         bool parse_section(Handler& h) {
             expect(z, '[');
+            bool split = consume(z, '[');
             h.accept_section_begin();
             parse_whitespace();
             unsigned int level = 1;
@@ -503,8 +504,11 @@ namespace lni {
             h.accept_section_end(inherited, level==1);
 
             parse_whitespace();
-            if (!consume(z, ']')) {
+            if (!consume(z, ']') || (split && !consume(z, ']'))) {
                 return error(h, "']' expected near '%c'", *z);
+            }
+            if (split) {
+                h.accept_split();
             }
             return true;
         }
