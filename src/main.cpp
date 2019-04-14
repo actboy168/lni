@@ -62,7 +62,11 @@ namespace lni {
     }
 }
 
+#if defined(_WIN32)
 extern "C" __declspec(dllexport)
+#else
+extern "C"
+#endif
 int luaopen_lni(lua_State* L) {
     lua_pushcfunction(L, lni::parse);
     return 1;
