@@ -1,3 +1,6 @@
+package.path = [[.\test\?.lua]]
+package.cpath = [[.\build\msvc\bin\?.dll]]
+
 local lni = require 'lni'
 local print_r = require 'print_r'
 

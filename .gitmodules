@@ -1,6 +1,0 @@
-[submodule "3rd/luamake"]
-	path = 3rd/luamake
-	url = https://github.com/actboy168/luamake
-[submodule "3rd/lua53"]
-	path = 3rd/lua53
-	url = https://github.com/ejoy/lua
