@@ -6,6 +6,6 @@ lm:lua_library 'lni' {
 }
 
 lm:build "test" {
-   "$luamake", "lua", "test.lua",
+   "$luamake", "lua", "test/test.lua",
    deps = { "lni" }
 }
